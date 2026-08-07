@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { anthropic, currentSeasonFr, RECIPE_MODEL } from "@/lib/anthropic";
 import { PROPOSE_RECIPES_TOOL, type ProposedRecipe } from "@/lib/recipe-tool";
+import { proteinGuidance, type Goal } from "@/lib/nutrition";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       .eq("household_id", profile.household_id),
     supabase
       .from("profiles")
-      .select("display_name, goal, daily_calorie_target")
+      .select("display_name, goal, daily_calorie_target, dietary_preferences")
       .eq("household_id", profile.household_id),
   ]);
 
@@ -37,10 +38,16 @@ export async function POST(request: NextRequest) {
     .join("\n") || "(stock vide pour l'instant)";
 
   const membersText = (members ?? [])
-    .map(
-      (m) =>
-        `- ${m.display_name} : objectif ${m.goal ?? "non renseigné"}, ~${m.daily_calorie_target ?? "?"} kcal/jour visées`,
-    )
+    .map((m) => {
+      const goal = (m.goal as Goal | null) ?? null;
+      const parts = [
+        `objectif ${goal ?? "non renseigné"}`,
+        `~${m.daily_calorie_target ?? "?"} kcal/jour visées`,
+      ];
+      if (goal) parts.push(proteinGuidance(goal));
+      if (m.dietary_preferences) parts.push(`préférences : ${m.dietary_preferences}`);
+      return `- ${m.display_name} : ${parts.join(", ")}`;
+    })
     .join("\n");
 
   const season = currentSeasonFr();
@@ -56,7 +63,7 @@ ${membersText || "(profils non renseignés)"}
 Stock actuel du frigo et des placards :
 ${stockText}
 
-Propose 3 recettes saines, équilibrées, de saison, réalisables avec un maximum d'ingrédients déjà en stock (les ingrédients manquants doivent rester peu nombreux et faciles à trouver). Adapte les portions/calories pour satisfaire les deux objectifs caloriques quand ils diffèrent (par exemple en suggérant des variantes de quantité par personne dans la description). Donne des instructions de cuisson précises et des quantités exactes par personne. Utilise l'outil propose_recipes pour répondre.`;
+Propose 3 recettes saines, équilibrées, de saison, réalisables avec un maximum d'ingrédients déjà en stock (les ingrédients manquants doivent rester peu nombreux et faciles à trouver). Respecte strictement les préférences et contraintes alimentaires listées pour chaque membre (allergie, régime, aliments exclus) — ce sont des restrictions non négociables, pas de simples suggestions. Adapte les portions/calories pour satisfaire les deux objectifs caloriques quand ils diffèrent (par exemple en suggérant des variantes de quantité par personne dans la description). Donne des instructions de cuisson précises et des quantités exactes par personne. Utilise l'outil propose_recipes pour répondre.`;
 
   const message = await anthropic.messages.create({
     model: RECIPE_MODEL,

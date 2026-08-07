@@ -19,8 +19,9 @@ create table if not exists profiles (
   weight_kg numeric,
   birth_date date,
   activity_level text check (activity_level in ('sedentaire', 'leger', 'modere', 'actif', 'tres_actif')),
-  goal text check (goal in ('perte_de_poids', 'maintien', 'prise_de_masse')),
+  goal text check (goal in ('perte_de_poids', 'maintien', 'prise_de_masse', 'recomposition')),
   daily_calorie_target numeric,
+  dietary_preferences text,
   onboarded boolean not null default false,
   created_at timestamptz not null default now()
 );

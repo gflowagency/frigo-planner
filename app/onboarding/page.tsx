@@ -124,6 +124,7 @@ export default async function OnboardingPage({
               <option value="perte_de_poids">Perte de poids</option>
               <option value="maintien">Maintien</option>
               <option value="prise_de_masse">Prise de masse</option>
+              <option value="recomposition">Recomposition (perdre du gras et prendre du muscle)</option>
             </select>
           </div>
 

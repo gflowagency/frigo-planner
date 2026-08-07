@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logout } from "@/app/logout/actions";
 
 const NAV_ITEMS = [
   {
@@ -41,6 +40,16 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    href: "/settings",
+    label: "Profil",
+    icon: (active: boolean) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" />
+      </svg>
+    ),
+  },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -73,20 +82,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-
-          <form action={logout}>
-            <button
-              type="submit"
-              aria-label="Déconnexion"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-accent-soft/60 hover:text-danger"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </button>
-          </form>
         </div>
       </header>
 

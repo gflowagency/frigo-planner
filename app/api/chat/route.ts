@@ -26,14 +26,25 @@ export async function POST(request: NextRequest) {
     previousRecipes: ProposedRecipe[];
   };
 
-  const { data: pantryItems } = await supabase
-    .from("pantry_items")
-    .select("name, brand, category, quantity, unit")
-    .eq("household_id", profile.household_id);
+  const [{ data: pantryItems }, { data: members }] = await Promise.all([
+    supabase
+      .from("pantry_items")
+      .select("name, brand, category, quantity, unit")
+      .eq("household_id", profile.household_id),
+    supabase
+      .from("profiles")
+      .select("display_name, dietary_preferences")
+      .eq("household_id", profile.household_id),
+  ]);
 
   const stockText = (pantryItems ?? [])
     .map((i) => `- ${i.name} : ${i.quantity} ${i.unit}`)
     .join("\n") || "(stock vide)";
+
+  const preferencesText = (members ?? [])
+    .filter((m) => m.dietary_preferences)
+    .map((m) => `- ${m.display_name} : ${m.dietary_preferences}`)
+    .join("\n");
 
   const systemContext = `Tu es un nutritionniste et cuisinier qui aide un couple à ajuster des propositions de recettes selon leurs retours.
 
@@ -41,6 +52,9 @@ Saison actuelle : ${currentSeasonFr()}.
 
 Stock actuel :
 ${stockText}
+
+Préférences et contraintes alimentaires (restrictions non négociables) :
+${preferencesText || "(aucune renseignée)"}
 
 Dernières recettes proposées :
 ${JSON.stringify(previousRecipes, null, 2)}
