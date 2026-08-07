@@ -20,14 +20,10 @@ export async function signup(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
+  // profiles row is created automatically by the handle_new_user() DB trigger.
   if (!data.session) {
     redirect("/login?message=Compte créé, vérifie tes e-mails pour confirmer ton adresse.");
   }
-
-  await supabase.from("profiles").insert({
-    id: data.user!.id,
-    display_name: displayName,
-  });
 
   redirect("/onboarding");
 }

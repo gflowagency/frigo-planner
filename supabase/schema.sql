@@ -142,6 +142,27 @@ begin
 end;
 $$;
 
+-- Auto-create a profiles row whenever a new auth.users row appears — fires
+-- immediately on signup, before email confirmation, so it never races with
+-- the "does the caller have a session yet" problem a client-side insert has.
+create or replace function handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  insert into public.profiles (id, display_name)
+  values (new.id, coalesce(new.raw_user_meta_data->>'display_name', 'Nouvel utilisateur'));
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function handle_new_user();
+
 -- Both RPC functions are SECURITY DEFINER and would otherwise be callable
 -- by anyone, including unauthenticated visitors (e.g. to brute-force invite
 -- codes). Lock execution down to signed-in users only.
