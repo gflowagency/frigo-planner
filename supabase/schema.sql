@@ -124,11 +124,31 @@ begin
 end;
 $$;
 
+-- Create a brand new household for the caller. Runs as SECURITY DEFINER so
+-- it bypasses RLS: at the point of creation the caller isn't linked to any
+-- household yet, so the ordinary INSERT/SELECT policies can't be satisfied
+-- for a plain client-side insert.
+create or replace function create_household()
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  new_id uuid;
+begin
+  insert into households default values returning id into new_id;
+  return new_id;
+end;
+$$;
+
 -- Both RPC functions are SECURITY DEFINER and would otherwise be callable
 -- by anyone, including unauthenticated visitors (e.g. to brute-force invite
 -- codes). Lock execution down to signed-in users only.
 revoke execute on function my_household_id() from public;
 revoke execute on function join_household(text) from public;
+revoke execute on function create_household() from public;
 grant execute on function my_household_id() to authenticated;
 grant execute on function join_household(text) to authenticated;
+grant execute on function create_household() to authenticated;
 

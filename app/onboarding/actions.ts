@@ -21,13 +21,9 @@ export async function completeOnboarding(formData: FormData) {
     if (error) redirect(`/onboarding?error=${encodeURIComponent(error.message)}`);
     householdId = data as string;
   } else {
-    // Insert with a client-generated id instead of .select()-ing the row back:
-    // the SELECT policy on households depends on my_household_id(), which is
-    // still null for this user until the profile update below runs, so RLS
-    // would block reading the just-inserted row back.
-    householdId = crypto.randomUUID();
-    const { error } = await supabase.from("households").insert({ id: householdId });
+    const { data, error } = await supabase.rpc("create_household");
     if (error) redirect(`/onboarding?error=${encodeURIComponent(error.message)}`);
+    householdId = data as string;
   }
 
   const sex = String(formData.get("sex")) as "femme" | "homme" | "autre";
