@@ -14,6 +14,9 @@ type LookupResult = {
   category?: string;
 };
 
+const fieldClass =
+  "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
+
 export default function BarcodeScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [scanning, setScanning] = useState(false);
@@ -84,25 +87,46 @@ export default function BarcodeScanner() {
       {!scanning && !result && (
         <button
           onClick={() => setScanning(true)}
-          className="rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white hover:bg-neutral-800"
+          className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center transition-colors hover:border-accent hover:bg-accent-soft/40"
         >
-          Démarrer le scan
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8" />
+              <path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8" />
+              <path d="M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16" />
+              <path d="M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" />
+              <line x1="7" y1="12" x2="17" y2="12" />
+            </svg>
+          </span>
+          <span className="text-[15px] font-semibold text-foreground">Démarrer le scan</span>
+          <span className="text-sm text-muted">Vise le code-barres, on s&apos;occupe du reste.</span>
         </button>
       )}
 
       {scanning && (
-        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-black">
-          <video ref={videoRef} className="aspect-video w-full object-cover" muted playsInline />
-          <p className="bg-neutral-900 px-3 py-2 text-center text-xs text-neutral-300">
-            Vise le code-barres du produit avec la caméra.
+        <div className="relative overflow-hidden rounded-2xl bg-black">
+          <video ref={videoRef} className="aspect-[3/4] w-full object-cover sm:aspect-video" muted playsInline />
+          <div className="pointer-events-none absolute inset-6 rounded-2xl border-2 border-accent/70 sm:inset-16">
+            <span className="absolute -left-0.5 -top-0.5 h-6 w-6 rounded-tl-2xl border-l-4 border-t-4 border-accent" />
+            <span className="absolute -right-0.5 -top-0.5 h-6 w-6 rounded-tr-2xl border-r-4 border-t-4 border-accent" />
+            <span className="absolute -bottom-0.5 -left-0.5 h-6 w-6 rounded-bl-2xl border-b-4 border-l-4 border-accent" />
+            <span className="absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-br-2xl border-b-4 border-r-4 border-accent" />
+          </div>
+          <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-8 text-center text-xs font-medium text-white">
+            Vise le code-barres du produit avec la caméra
           </p>
         </div>
       )}
 
-      {loadingLookup && <p className="text-sm text-neutral-500">Recherche du produit…</p>}
+      {loadingLookup && (
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-soft border-t-accent" />
+          Recherche du produit…
+        </p>
+      )}
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>
       )}
 
       {result && (
@@ -111,20 +135,24 @@ export default function BarcodeScanner() {
             await addPantryItem(formData);
             reset();
           }}
-          className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4"
+          className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
         >
           <div className="flex items-center gap-3">
-            {result.imageUrl && (
+            {result.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={result.imageUrl} alt="" className="h-14 w-14 rounded-md object-cover" />
+              <img src={result.imageUrl} alt="" className="h-14 w-14 rounded-xl object-cover" />
+            ) : (
+              <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent-soft text-xl">
+                🍽️
+              </span>
             )}
             <div>
-              <p className="text-sm font-medium text-neutral-900">
+              <p className="text-[15px] font-medium text-foreground">
                 {result.found ? result.name : "Produit inconnu"}
               </p>
-              {result.brand && <p className="text-xs text-neutral-400">{result.brand}</p>}
+              {result.brand && <p className="text-xs text-muted-2">{result.brand}</p>}
               {!result.found && (
-                <p className="text-xs text-neutral-400">
+                <p className="text-xs text-muted-2">
                   Ce code-barres n&apos;est pas dans OpenFoodFacts, complète les infos.
                 </p>
               )}
@@ -139,23 +167,18 @@ export default function BarcodeScanner() {
             defaultValue={result.name ?? ""}
             required
             placeholder="Nom du produit"
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            className={fieldClass}
           />
-          <input
-            name="brand"
-            defaultValue={result.brand ?? ""}
-            placeholder="Marque"
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
-          />
+          <input name="brand" defaultValue={result.brand ?? ""} placeholder="Marque" className={fieldClass} />
           <div className="grid grid-cols-3 gap-3">
             <select
               name="category"
               defaultValue={result.category ?? "autre"}
-              className="col-span-2 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className={`col-span-2 ${fieldClass}`}
             >
               {PANTRY_CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
-                  {c.label}
+                  {c.emoji} {c.label}
                 </option>
               ))}
             </select>
@@ -165,21 +188,21 @@ export default function BarcodeScanner() {
               min={1}
               step="0.1"
               defaultValue={1}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className={fieldClass}
             />
           </div>
 
           <div className="flex gap-2">
             <button
               type="submit"
-              className="flex-1 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+              className="flex-1 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98]"
             >
               Ajouter au stock
             </button>
             <button
               type="button"
               onClick={reset}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100"
+              className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-background"
             >
               Annuler
             </button>

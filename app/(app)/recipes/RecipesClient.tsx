@@ -5,6 +5,13 @@ import type { ProposedRecipe } from "@/lib/recipe-tool";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
+const SEASON_EMOJI: Record<string, string> = {
+  hiver: "❄️",
+  printemps: "🌱",
+  été: "☀️",
+  automne: "🍂",
+};
+
 export default function RecipesClient() {
   const [recipes, setRecipes] = useState<ProposedRecipe[] | null>(null);
   const [season, setSeason] = useState<string | null>(null);
@@ -65,73 +72,114 @@ export default function RecipesClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 sm:flex-row sm:items-center">
         <input
           value={mood}
           onChange={(e) => setMood(e.target.value)}
-          placeholder="Une envie particulière ? (optionnel : léger, réconfortant, rapide…)"
-          className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+          placeholder="Une envie particulière ? (léger, réconfortant, rapide…)"
+          className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15"
         />
         <button
           onClick={generate}
           disabled={loading}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+          className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
         >
           {loading ? "Génération…" : recipes ? "Regénérer" : "Suggérer des recettes"}
         </button>
       </div>
 
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
 
-      {season && (
-        <p className="text-xs uppercase tracking-wide text-neutral-400">
-          Suggestions adaptées à la saison : {season}
+      {season && !loading && (
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-2">
+          {SEASON_EMOJI[season] ?? ""} Suggestions adaptées à la saison : {season}
         </p>
       )}
 
-      {recipes && (
+      {loading && (
+        <div className="flex flex-col gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="animate-pulse rounded-2xl border border-border bg-surface p-5">
+              <div className="mb-3 h-4 w-2/5 rounded-full bg-accent-soft" />
+              <div className="mb-2 h-3 w-full rounded-full bg-border" />
+              <div className="mb-5 h-3 w-3/4 rounded-full bg-border" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="h-3 w-1/2 rounded-full bg-border" />
+                  <div className="h-3 w-full rounded-full bg-border" />
+                  <div className="h-3 w-5/6 rounded-full bg-border" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-1/2 rounded-full bg-border" />
+                  <div className="h-3 w-full rounded-full bg-border" />
+                  <div className="h-3 w-4/6 rounded-full bg-border" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && !recipes && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center">
+          <span className="text-3xl">🍲</span>
+          <p className="text-[15px] font-medium text-foreground">Pas encore de recettes</p>
+          <p className="max-w-xs text-sm text-muted">
+            Génère 3 idées adaptées à votre stock actuel, à la saison et à vos objectifs.
+          </p>
+        </div>
+      )}
+
+      {!loading && recipes && (
         <div className="flex flex-col gap-4">
           {recipes.map((recipe, idx) => (
-            <article key={idx} className="rounded-lg border border-neutral-200 bg-white p-5">
+            <article key={idx} className="rounded-2xl border border-border bg-surface p-5">
               <div className="mb-2 flex items-start justify-between gap-3">
-                <h3 className="text-lg font-semibold text-neutral-900">{recipe.title}</h3>
-                <span className="whitespace-nowrap rounded-full bg-neutral-100 px-2 py-1 text-xs text-neutral-600">
+                <h3 className="text-[17px] font-semibold tracking-tight text-foreground">{recipe.title}</h3>
+                <span className="whitespace-nowrap rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium tabular-nums text-accent-hover">
                   ~{recipe.estimated_calories_per_serving} kcal / part
                 </span>
               </div>
-              <p className="mb-3 text-sm text-neutral-500">{recipe.description}</p>
-              <p className="mb-2 text-xs font-medium text-neutral-400">
+              <p className="mb-3 text-sm text-muted">{recipe.description}</p>
+              <p className="mb-3 text-xs font-medium text-muted-2">
                 Pour {recipe.servings} personne{recipe.servings > 1 ? "s" : ""}
               </p>
 
-              <div className="mb-3 grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-5 border-t border-border pt-4 sm:grid-cols-2">
                 <div>
-                  <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-2">
                     Ingrédients
                   </h4>
-                  <ul className="space-y-1 text-sm text-neutral-700">
+                  <ul className="space-y-1.5 text-sm text-foreground">
                     {recipe.ingredients.map((ing, i) => (
-                      <li key={i} className="flex items-center gap-2">
+                      <li key={i} className="flex items-start gap-2">
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            ing.have_in_stock ? "bg-emerald-500" : "bg-amber-500"
+                          className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
+                            ing.have_in_stock ? "bg-success" : "bg-accent"
                           }`}
                         />
-                        {ing.quantity} — {ing.name}
-                        {!ing.have_in_stock && (
-                          <span className="text-xs text-amber-600">(à acheter)</span>
-                        )}
+                        <span>
+                          {ing.quantity} — {ing.name}
+                          {!ing.have_in_stock && (
+                            <span className="ml-1 text-xs font-medium text-accent">(à acheter)</span>
+                          )}
+                        </span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-2">
                     Préparation
                   </h4>
-                  <ol className="list-decimal space-y-1 pl-4 text-sm text-neutral-700">
+                  <ol className="space-y-1.5 text-sm text-foreground">
                     {recipe.instructions.map((step, i) => (
-                      <li key={i}>{step}</li>
+                      <li key={i} className="flex gap-2.5">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[11px] font-semibold text-accent-hover">
+                          {i + 1}
+                        </span>
+                        {step}
+                      </li>
                     ))}
                   </ol>
                 </div>
@@ -141,32 +189,34 @@ export default function RecipesClient() {
         </div>
       )}
 
-      {recipes && (
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
-          <h3 className="mb-2 text-sm font-semibold text-neutral-700">Ajuster les recettes</h3>
-          <div className="mb-3 flex flex-col gap-2">
-            {chatMessages.map((m, i) => (
-              <p
-                key={i}
-                className={`text-sm ${m.role === "user" ? "text-neutral-900" : "text-neutral-500"}`}
-              >
-                <span className="font-medium">{m.role === "user" ? "Vous : " : "Assistant : "}</span>
-                {m.content}
-              </p>
-            ))}
-          </div>
+      {!loading && recipes && (
+        <div className="rounded-2xl border border-border bg-surface p-4">
+          <h3 className="mb-3 text-sm font-semibold text-foreground">Ajuster les recettes</h3>
+          {chatMessages.length > 0 && (
+            <div className="mb-3 flex flex-col gap-2">
+              {chatMessages.map((m, i) => (
+                <p
+                  key={i}
+                  className={`text-sm ${m.role === "user" ? "text-foreground" : "text-muted"}`}
+                >
+                  <span className="font-medium">{m.role === "user" ? "Vous : " : "Assistant : "}</span>
+                  {m.content}
+                </p>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
             <input
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendChat()}
               placeholder="ex: pas envie de poisson, quelque chose de plus rapide…"
-              className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15"
             />
             <button
               onClick={sendChat}
               disabled={chatLoading}
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+              className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
             >
               {chatLoading ? "…" : "Envoyer"}
             </button>
