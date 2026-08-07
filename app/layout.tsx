@@ -36,6 +36,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Next's appleWebApp metadata only emits the unified "mobile-web-app-capable"
+            tag; older iOS Safari versions still need this legacy Apple-specific one
+            to launch standalone (no browser chrome) from the home screen. */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
