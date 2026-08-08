@@ -61,14 +61,22 @@ ${JSON.stringify(previousRecipes, null, 2)}
 
 Le couple va te donner un retour (ex: "pas envie de poisson", "trop calorique", "plus rapide à préparer"). Ajuste et renvoie une liste complète de 3 recettes mises à jour via l'outil propose_recipes — ne renvoie jamais de texte libre, uniquement l'outil.`;
 
-  const message = await anthropic.messages.create({
-    model: RECIPE_MODEL,
-    max_tokens: 4096,
-    system: systemContext,
-    tools: [PROPOSE_RECIPES_TOOL],
-    tool_choice: { type: "tool", name: "propose_recipes" },
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  });
+  let message;
+  try {
+    message = await anthropic.messages.create({
+      model: RECIPE_MODEL,
+      max_tokens: 4096,
+      system: systemContext,
+      tools: [PROPOSE_RECIPES_TOOL],
+      tool_choice: { type: "tool", name: "propose_recipes" },
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    });
+  } catch (err) {
+    const status = (err as { status?: number })?.status;
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("anthropic.messages.create failed:", status, detail);
+    return NextResponse.json({ error: `Claude API error: ${detail}` }, { status: 502 });
+  }
 
   const toolUse = message.content.find((block) => block.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") {

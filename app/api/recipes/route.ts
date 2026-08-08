@@ -65,13 +65,21 @@ ${stockText}
 
 Propose 3 recettes saines, équilibrées, de saison, réalisables avec un maximum d'ingrédients déjà en stock (les ingrédients manquants doivent rester peu nombreux et faciles à trouver). Respecte strictement les préférences et contraintes alimentaires listées pour chaque membre (allergie, régime, aliments exclus) — ce sont des restrictions non négociables, pas de simples suggestions. Adapte les portions/calories pour satisfaire les deux objectifs caloriques quand ils diffèrent (par exemple en suggérant des variantes de quantité par personne dans la description). Donne des instructions de cuisson précises et des quantités exactes par personne. Utilise l'outil propose_recipes pour répondre.`;
 
-  const message = await anthropic.messages.create({
-    model: RECIPE_MODEL,
-    max_tokens: 4096,
-    tools: [PROPOSE_RECIPES_TOOL],
-    tool_choice: { type: "tool", name: "propose_recipes" },
-    messages: [{ role: "user", content: prompt }],
-  });
+  let message;
+  try {
+    message = await anthropic.messages.create({
+      model: RECIPE_MODEL,
+      max_tokens: 4096,
+      tools: [PROPOSE_RECIPES_TOOL],
+      tool_choice: { type: "tool", name: "propose_recipes" },
+      messages: [{ role: "user", content: prompt }],
+    });
+  } catch (err) {
+    const status = (err as { status?: number })?.status;
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("anthropic.messages.create failed:", status, detail);
+    return NextResponse.json({ error: `Claude API error: ${detail}` }, { status: 502 });
+  }
 
   const toolUse = message.content.find((block) => block.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") {

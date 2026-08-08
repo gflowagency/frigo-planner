@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { adjustPantryQuantity, deletePantryItem } from "../pantry-actions";
 import { categoryLabel, categoryEmoji } from "@/lib/categories";
 import NutriscoreBadge from "../scan/NutriscoreBadge";
+import NutrientGrid from "../scan/NutrientGrid";
 
 type PantryItem = {
   id: string;
@@ -14,10 +15,12 @@ type PantryItem = {
   unit: string;
   image_url: string | null;
   nutriscore: string | null;
+  nutrients: Record<string, number> | null;
 };
 
 export default function PantryList({ items }: { items: PantryItem[] }) {
   const [query, setQuery] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -78,54 +81,79 @@ export default function PantryList({ items }: { items: PantryItem[] }) {
           </h2>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
             {categoryItems.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3.5">
-                <div className="flex min-w-0 items-center gap-2">
-                  {item.nutriscore && <NutriscoreBadge grade={item.nutriscore} />}
-                  <div className="min-w-0">
-                    <p className="truncate text-[15px] font-medium text-foreground">{item.name}</p>
-                    {item.brand && <p className="text-xs text-muted-2">{item.brand}</p>}
+              <li key={item.id} className="px-4 py-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    {item.nutriscore && <NutriscoreBadge grade={item.nutriscore} />}
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-medium text-foreground">{item.name}</p>
+                      {item.brand && <p className="text-xs text-muted-2">{item.brand}</p>}
+                    </div>
+                    {item.nutrients && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                        aria-label="Voir les nutriments"
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                          expandedId === item.id
+                            ? "border-accent bg-accent-soft text-accent"
+                            : "border-border text-muted-2 hover:border-accent hover:text-accent"
+                        }`}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <form action={adjustPantryQuantity}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <input type="hidden" name="delta" value={-1} />
+                      <button
+                        type="submit"
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-95"
+                      >
+                        −
+                      </button>
+                    </form>
+                    <span className="w-16 text-center text-sm tabular-nums text-foreground">
+                      {item.quantity} {item.unit}
+                    </span>
+                    <form action={adjustPantryQuantity}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <input type="hidden" name="delta" value={1} />
+                      <button
+                        type="submit"
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-95"
+                      >
+                        +
+                      </button>
+                    </form>
+                    <form action={deletePantryItem}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <button
+                        type="submit"
+                        aria-label="Supprimer"
+                        className="ml-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-danger-soft hover:text-danger"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                        </svg>
+                      </button>
+                    </form>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <form action={adjustPantryQuantity}>
-                    <input type="hidden" name="id" value={item.id} />
-                    <input type="hidden" name="delta" value={-1} />
-                    <button
-                      type="submit"
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-95"
-                    >
-                      −
-                    </button>
-                  </form>
-                  <span className="w-16 text-center text-sm tabular-nums text-foreground">
-                    {item.quantity} {item.unit}
-                  </span>
-                  <form action={adjustPantryQuantity}>
-                    <input type="hidden" name="id" value={item.id} />
-                    <input type="hidden" name="delta" value={1} />
-                    <button
-                      type="submit"
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-95"
-                    >
-                      +
-                    </button>
-                  </form>
-                  <form action={deletePantryItem}>
-                    <input type="hidden" name="id" value={item.id} />
-                    <button
-                      type="submit"
-                      aria-label="Supprimer"
-                      className="ml-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-danger-soft hover:text-danger"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                        <path d="M10 11v6" />
-                        <path d="M14 11v6" />
-                      </svg>
-                    </button>
-                  </form>
-                </div>
+                {expandedId === item.id && item.nutrients && (
+                  <div className="mt-3">
+                    <NutrientGrid nutrients={item.nutrients} />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -18,12 +18,27 @@ function guessCategory(offCategoriesTags: string[] | undefined): string {
   return "autre";
 }
 
-/** Best-effort parse of OpenFoodFacts' free-text "quantity" field (e.g. "500 g", "1 L", "6x25cl"). */
+const UNIT_ALIASES: Record<string, string> = { gr: "g", grs: "g", grammes: "g", gramme: "g", litre: "l", litres: "l" };
+
+/**
+ * Best-effort parse of OpenFoodFacts' free-text "quantity" field
+ * (e.g. "500 g", "1 L", "6x25cl", "500GR", "0,5kg"). Handles the multipack
+ * "NxQUANTITYunit" form by multiplying out to a single total.
+ */
 function parseQuantity(raw: string | undefined): { quantity: number; unit: string } | null {
   if (!raw) return null;
-  const match = raw.replace(",", ".").match(/(\d+(?:\.\d+)?)\s*(kg|g|l|ml|cl)\b/i);
-  if (!match) return null;
-  return { quantity: Number(match[1]), unit: match[2].toLowerCase() };
+  const normalized = raw.toLowerCase().replace(",", ".");
+
+  const multipack = normalized.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*(kg|g|gr|grs?|l|ml|cl)\b/);
+  if (multipack) {
+    const unit = UNIT_ALIASES[multipack[3]] ?? multipack[3];
+    return { quantity: Number(multipack[1]) * Number(multipack[2]), unit };
+  }
+
+  const single = normalized.match(/(\d+(?:\.\d+)?)\s*(kg|g|gr|grs?|l|ml|cl)\b/);
+  if (!single) return null;
+  const unit = UNIT_ALIASES[single[2]] ?? single[2];
+  return { quantity: Number(single[1]), unit };
 }
 
 function pickNutrients(nutriments: Record<string, number> | undefined) {
@@ -66,7 +81,11 @@ export async function GET(request: NextRequest) {
   }
 
   const product = data.product;
-  const parsedQuantity = parseQuantity(product.quantity);
+  const parsedQuantity =
+    parseQuantity(product.quantity) ??
+    (product.product_quantity && product.product_quantity_unit
+      ? { quantity: Number(product.product_quantity), unit: String(product.product_quantity_unit).toLowerCase() }
+      : null);
 
   return NextResponse.json({
     found: true,

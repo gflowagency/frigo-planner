@@ -5,6 +5,7 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { addPantryItem } from "../pantry-actions";
 import { PANTRY_CATEGORIES } from "@/lib/categories";
 import NutriscoreBadge from "./NutriscoreBadge";
+import NutrientGrid from "./NutrientGrid";
 
 type LookupResult = {
   found: boolean;
@@ -21,17 +22,6 @@ type LookupResult = {
 
 const fieldClass =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
-
-const NUTRIENT_LABELS: Record<string, string> = {
-  kcal: "Énergie",
-  proteines: "Protéines",
-  glucides: "Glucides",
-  sucres: "dont sucres",
-  lipides: "Lipides",
-  acides_gras_satures: "dont saturés",
-  fibres: "Fibres",
-  sel: "Sel",
-};
 
 export default function BarcodeScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -178,20 +168,7 @@ export default function BarcodeScanner() {
             </div>
           </div>
 
-          {result.nutrients && (
-            <div className="grid grid-cols-4 gap-2 rounded-xl bg-background p-3 text-center">
-              {Object.entries(result.nutrients).map(([key, value]) => (
-                <div key={key}>
-                  <p className="text-sm font-semibold tabular-nums text-foreground">
-                    {Math.round(value * 10) / 10}
-                    {key === "kcal" ? "" : "g"}
-                  </p>
-                  <p className="text-[10px] leading-tight text-muted-2">{NUTRIENT_LABELS[key] ?? key}</p>
-                </div>
-              ))}
-              <p className="col-span-4 -mt-1 text-[10px] text-muted-2">pour 100 g</p>
-            </div>
-          )}
+          {result.nutrients && <NutrientGrid nutrients={result.nutrients} />}
 
           <input type="hidden" name="barcode" value={result.barcode ?? ""} />
           <input type="hidden" name="imageUrl" value={result.imageUrl ?? ""} />

@@ -33,14 +33,18 @@ export default function RecipesClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mood: mood || undefined }),
       });
-      if (!res.ok) throw new Error("Échec de la génération");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Échec de la génération");
       setRecipes(data.recipes);
       setSeason(data.season);
       setChatMessages([]);
       setConsumedSummary({});
-    } catch {
-      setError("Impossible de générer des recettes pour le moment. Réessaie.");
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Impossible de générer des recettes pour le moment. Réessaie.",
+      );
     } finally {
       setLoading(false);
     }
@@ -90,16 +94,16 @@ export default function RecipesClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: nextMessages, previousRecipes: recipes }),
       });
-      if (!res.ok) throw new Error("Échec de l'ajustement");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Échec de l'ajustement");
       setRecipes(data.recipes);
       setConsumedSummary({});
       setChatMessages([
         ...nextMessages,
         { role: "assistant", content: "J'ai mis à jour les recettes selon ton retour." },
       ]);
-    } catch {
-      setError("L'ajustement a échoué. Réessaie.");
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "L'ajustement a échoué. Réessaie.");
     } finally {
       setChatLoading(false);
     }

@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: items } = await supabase
     .from("pantry_items")
-    .select("id, name, brand, category, quantity, unit, image_url, nutriscore")
+    .select("id, name, brand, category, quantity, unit, image_url, nutriscore, nutrients")
     .order("category", { ascending: true })
     .order("name", { ascending: true });
 
