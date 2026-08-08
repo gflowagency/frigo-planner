@@ -1,17 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { addPantryItem, adjustPantryQuantity, deletePantryItem } from "../pantry-actions";
-import { PANTRY_CATEGORIES, categoryLabel, categoryEmoji } from "@/lib/categories";
-
-type PantryItem = {
-  id: string;
-  name: string;
-  brand: string | null;
-  category: string | null;
-  quantity: number;
-  unit: string;
-  image_url: string | null;
-};
+import { addPantryItem } from "../pantry-actions";
+import { PANTRY_CATEGORIES } from "@/lib/categories";
+import PantryList from "./PantryList";
 
 const fieldClass =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
@@ -20,16 +11,11 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: items } = await supabase
     .from("pantry_items")
-    .select("id, name, brand, category, quantity, unit, image_url")
+    .select("id, name, brand, category, quantity, unit, image_url, nutriscore")
     .order("category", { ascending: true })
     .order("name", { ascending: true });
 
-  const grouped = new Map<string, PantryItem[]>();
-  for (const item of (items ?? []) as PantryItem[]) {
-    const key = item.category ?? "autre";
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key)!.push(item);
-  }
+  const count = items?.length ?? 0;
 
   return (
     <div className="flex flex-col gap-7">
@@ -37,8 +23,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Stock du foyer</h1>
           <p className="mt-0.5 text-sm text-muted">
-            {items?.length ?? 0} article{(items?.length ?? 0) > 1 ? "s" : ""} dans le frigo et les
-            placards.
+            {count} article{count > 1 ? "s" : ""} dans le frigo et les placards.
           </p>
         </div>
         <Link
@@ -93,7 +78,7 @@ export default async function DashboardPage() {
         </form>
       </details>
 
-      {grouped.size === 0 && (
+      {count === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center">
           <span className="text-3xl">🧊</span>
           <p className="text-[15px] font-medium text-foreground">Stock vide pour l&apos;instant</p>
@@ -107,66 +92,9 @@ export default async function DashboardPage() {
             Scanner un produit
           </Link>
         </div>
+      ) : (
+        <PantryList items={items!} />
       )}
-
-      {[...grouped.entries()].map(([category, categoryItems]) => (
-        <section key={category}>
-          <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-2">
-            <span>{categoryEmoji(category)}</span>
-            {categoryLabel(category)}
-          </h2>
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
-            {categoryItems.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3.5">
-                <div className="min-w-0">
-                  <p className="truncate text-[15px] font-medium text-foreground">{item.name}</p>
-                  {item.brand && <p className="text-xs text-muted-2">{item.brand}</p>}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <form action={adjustPantryQuantity}>
-                    <input type="hidden" name="id" value={item.id} />
-                    <input type="hidden" name="delta" value={-1} />
-                    <button
-                      type="submit"
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-95"
-                    >
-                      −
-                    </button>
-                  </form>
-                  <span className="w-16 text-center text-sm tabular-nums text-foreground">
-                    {item.quantity} {item.unit}
-                  </span>
-                  <form action={adjustPantryQuantity}>
-                    <input type="hidden" name="id" value={item.id} />
-                    <input type="hidden" name="delta" value={1} />
-                    <button
-                      type="submit"
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-95"
-                    >
-                      +
-                    </button>
-                  </form>
-                  <form action={deletePantryItem}>
-                    <input type="hidden" name="id" value={item.id} />
-                    <button
-                      type="submit"
-                      aria-label="Supprimer"
-                      className="ml-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-danger-soft hover:text-danger"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                        <path d="M10 11v6" />
-                        <path d="M14 11v6" />
-                      </svg>
-                    </button>
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
 
       <Link
         href="/scan"

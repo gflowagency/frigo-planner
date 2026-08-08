@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { addPantryItem } from "../pantry-actions";
 import { PANTRY_CATEGORIES } from "@/lib/categories";
+import NutriscoreBadge from "./NutriscoreBadge";
 
 type LookupResult = {
   found: boolean;
@@ -12,10 +13,25 @@ type LookupResult = {
   brand?: string | null;
   imageUrl?: string | null;
   category?: string;
+  quantity?: number | null;
+  unit?: string | null;
+  nutriscore?: string | null;
+  nutrients?: Record<string, number> | null;
 };
 
 const fieldClass =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
+
+const NUTRIENT_LABELS: Record<string, string> = {
+  kcal: "Énergie",
+  proteines: "Protéines",
+  glucides: "Glucides",
+  sucres: "dont sucres",
+  lipides: "Lipides",
+  acides_gras_satures: "dont saturés",
+  fibres: "Fibres",
+  sel: "Sel",
+};
 
 export default function BarcodeScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -146,10 +162,13 @@ export default function BarcodeScanner() {
                 🍽️
               </span>
             )}
-            <div>
-              <p className="text-[15px] font-medium text-foreground">
-                {result.found ? result.name : "Produit inconnu"}
-              </p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="truncate text-[15px] font-medium text-foreground">
+                  {result.found ? result.name : "Produit inconnu"}
+                </p>
+                {result.nutriscore && <NutriscoreBadge grade={result.nutriscore} />}
+              </div>
               {result.brand && <p className="text-xs text-muted-2">{result.brand}</p>}
               {!result.found && (
                 <p className="text-xs text-muted-2">
@@ -159,8 +178,25 @@ export default function BarcodeScanner() {
             </div>
           </div>
 
+          {result.nutrients && (
+            <div className="grid grid-cols-4 gap-2 rounded-xl bg-background p-3 text-center">
+              {Object.entries(result.nutrients).map(([key, value]) => (
+                <div key={key}>
+                  <p className="text-sm font-semibold tabular-nums text-foreground">
+                    {Math.round(value * 10) / 10}
+                    {key === "kcal" ? "" : "g"}
+                  </p>
+                  <p className="text-[10px] leading-tight text-muted-2">{NUTRIENT_LABELS[key] ?? key}</p>
+                </div>
+              ))}
+              <p className="col-span-4 -mt-1 text-[10px] text-muted-2">pour 100 g</p>
+            </div>
+          )}
+
           <input type="hidden" name="barcode" value={result.barcode ?? ""} />
           <input type="hidden" name="imageUrl" value={result.imageUrl ?? ""} />
+          <input type="hidden" name="nutriscore" value={result.nutriscore ?? ""} />
+          <input type="hidden" name="nutrients" value={result.nutrients ? JSON.stringify(result.nutrients) : ""} />
 
           <input
             name="name"
@@ -170,7 +206,7 @@ export default function BarcodeScanner() {
             className={fieldClass}
           />
           <input name="brand" defaultValue={result.brand ?? ""} placeholder="Marque" className={fieldClass} />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <select
               name="category"
               defaultValue={result.category ?? "autre"}
@@ -185,9 +221,15 @@ export default function BarcodeScanner() {
             <input
               name="quantity"
               type="number"
-              min={1}
+              min={0.1}
               step="0.1"
-              defaultValue={1}
+              defaultValue={result.quantity ?? 1}
+              className={fieldClass}
+            />
+            <input
+              name="unit"
+              defaultValue={result.unit ?? "piece"}
+              placeholder="unité"
               className={fieldClass}
             />
           </div>

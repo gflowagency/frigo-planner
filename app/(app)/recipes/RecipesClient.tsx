@@ -21,6 +21,8 @@ export default function RecipesClient() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [consumingIdx, setConsumingIdx] = useState<number | null>(null);
+  const [consumedSummary, setConsumedSummary] = useState<Record<number, string>>({});
 
   async function generate() {
     setLoading(true);
@@ -36,10 +38,42 @@ export default function RecipesClient() {
       setRecipes(data.recipes);
       setSeason(data.season);
       setChatMessages([]);
+      setConsumedSummary({});
     } catch {
       setError("Impossible de générer des recettes pour le moment. Réessaie.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function markPrepared(idx: number) {
+    const recipe = recipes?.[idx];
+    if (!recipe) return;
+    setConsumingIdx(idx);
+    try {
+      const res = await fetch("/api/recipes/consume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ingredients: recipe.ingredients }),
+      });
+      if (!res.ok) throw new Error("Échec");
+      const data: { deducted: { ingredient: string; matched: string }[]; notFound: string[] } =
+        await res.json();
+      const parts: string[] = [];
+      if (data.deducted.length > 0) {
+        parts.push(`Retiré du stock : ${data.deducted.map((d) => d.matched).join(", ")}.`);
+      }
+      if (data.notFound.length > 0) {
+        parts.push(`Non trouvés en stock (à ajuster manuellement) : ${data.notFound.join(", ")}.`);
+      }
+      setConsumedSummary((prev) => ({
+        ...prev,
+        [idx]: parts.join(" ") || "Rien à retirer du stock pour cette recette.",
+      }));
+    } catch {
+      setError("Impossible de mettre à jour le stock. Réessaie.");
+    } finally {
+      setConsumingIdx(null);
     }
   }
 
@@ -59,6 +93,7 @@ export default function RecipesClient() {
       if (!res.ok) throw new Error("Échec de l'ajustement");
       const data = await res.json();
       setRecipes(data.recipes);
+      setConsumedSummary({});
       setChatMessages([
         ...nextMessages,
         { role: "assistant", content: "J'ai mis à jour les recettes selon ton retour." },
@@ -183,6 +218,22 @@ export default function RecipesClient() {
                     ))}
                   </ol>
                 </div>
+              </div>
+
+              <div className="mt-4 border-t border-border pt-4">
+                {consumedSummary[idx] ? (
+                  <p className="rounded-xl bg-success-soft px-3 py-2.5 text-xs text-success">
+                    ✓ Recette préparée. {consumedSummary[idx]}
+                  </p>
+                ) : (
+                  <button
+                    onClick={() => markPrepared(idx)}
+                    disabled={consumingIdx === idx}
+                    className="rounded-xl border border-border px-3.5 py-2 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+                  >
+                    {consumingIdx === idx ? "Mise à jour du stock…" : "Marquer comme préparée"}
+                  </button>
+                )}
               </div>
             </article>
           ))}

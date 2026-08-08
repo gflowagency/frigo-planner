@@ -18,6 +18,33 @@ function guessCategory(offCategoriesTags: string[] | undefined): string {
   return "autre";
 }
 
+/** Best-effort parse of OpenFoodFacts' free-text "quantity" field (e.g. "500 g", "1 L", "6x25cl"). */
+function parseQuantity(raw: string | undefined): { quantity: number; unit: string } | null {
+  if (!raw) return null;
+  const match = raw.replace(",", ".").match(/(\d+(?:\.\d+)?)\s*(kg|g|l|ml|cl)\b/i);
+  if (!match) return null;
+  return { quantity: Number(match[1]), unit: match[2].toLowerCase() };
+}
+
+function pickNutrients(nutriments: Record<string, number> | undefined) {
+  if (!nutriments) return null;
+  const keys: Record<string, string> = {
+    "energy-kcal_100g": "kcal",
+    proteins_100g: "proteines",
+    carbohydrates_100g: "glucides",
+    sugars_100g: "sucres",
+    fat_100g: "lipides",
+    "saturated-fat_100g": "acides_gras_satures",
+    fiber_100g: "fibres",
+    salt_100g: "sel",
+  };
+  const result: Record<string, number> = {};
+  for (const [offKey, label] of Object.entries(keys)) {
+    if (typeof nutriments[offKey] === "number") result[label] = nutriments[offKey];
+  }
+  return Object.keys(result).length > 0 ? result : null;
+}
+
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   if (!code) {
@@ -39,6 +66,7 @@ export async function GET(request: NextRequest) {
   }
 
   const product = data.product;
+  const parsedQuantity = parseQuantity(product.quantity);
 
   return NextResponse.json({
     found: true,
@@ -47,5 +75,9 @@ export async function GET(request: NextRequest) {
     brand: product.brands || null,
     imageUrl: product.image_front_small_url || product.image_url || null,
     category: guessCategory(product.categories_tags),
+    quantity: parsedQuantity?.quantity ?? null,
+    unit: parsedQuantity?.unit ?? null,
+    nutriscore: product.nutriscore_grade && product.nutriscore_grade !== "unknown" ? product.nutriscore_grade : null,
+    nutrients: pickNutrients(product.nutriments),
   });
 }

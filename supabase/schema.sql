@@ -37,6 +37,8 @@ create table if not exists pantry_items (
   unit text not null default 'piece',
   image_url text,
   expiry_date date,
+  nutriscore text,
+  nutrients jsonb,
   added_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
