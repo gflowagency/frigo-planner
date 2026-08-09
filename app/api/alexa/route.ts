@@ -20,12 +20,16 @@ function guessCurrentMealSlot(): string {
   return "soir";
 }
 
-function speak(text: string) {
+// Keeping the session open (shouldEndSession: false) lets the user chain
+// several turns — "ouvre frigo planner" once, then "j'ai mangé une pomme",
+// "j'ai mangé du comté", ... — without repeating the invocation each time.
+// Alexa keeps the mic open a few seconds after a non-ending response.
+function speak(text: string, keepListening = true) {
   return NextResponse.json({
     version: "1.0",
     response: {
       outputSpeech: { type: "PlainText", text },
-      shouldEndSession: true,
+      shouldEndSession: !keepListening,
     },
   });
 }
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
     const alexaUserId: string | undefined = body.session?.user?.userId ?? body.context?.System?.user?.userId;
     const requestType = body.request?.type;
 
-    if (!alexaUserId) return speak("Une erreur est survenue, réessaie plus tard.");
+    if (!alexaUserId) return speak("Une erreur est survenue, réessaie plus tard.", false);
 
     if (requestType === "LaunchRequest") {
       return speak(
@@ -76,7 +80,7 @@ export async function POST(request: NextRequest) {
         return speak("Dis par exemple : j'ai mangé une pomme. Ou : lie mon compte, suivi de ton code.");
       }
       if (intentName === "AMAZON.StopIntent" || intentName === "AMAZON.CancelIntent") {
-        return speak("À bientôt.");
+        return speak("À bientôt.", false);
       }
 
       if (intentName === "LinkAccountIntent") {
@@ -90,7 +94,7 @@ export async function POST(request: NextRequest) {
         });
         if (error) {
           console.error("alexa_link_account failed:", error.message);
-          return speak("Une erreur est survenue, réessaie plus tard.");
+          return speak("Une erreur est survenue, réessaie plus tard.", false);
         }
         return speak(
           linked
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
         });
         if (error) {
           console.error("alexa_log_food failed:", error.message);
-          return speak("Une erreur est survenue, réessaie plus tard.");
+          return speak("Une erreur est survenue, réessaie plus tard.", false);
         }
         const linked = (result as { linked?: boolean; deducted?: string | null } | null)?.linked;
         if (!linked) {
@@ -143,6 +147,6 @@ export async function POST(request: NextRequest) {
     return speak("Je n'ai pas compris, réessaie.");
   } catch (err) {
     console.error("Alexa handler crashed:", err);
-    return speak("Une erreur est survenue, réessaie plus tard.");
+    return speak("Une erreur est survenue, réessaie plus tard.", false);
   }
 }
