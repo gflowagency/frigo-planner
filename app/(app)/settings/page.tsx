@@ -42,17 +42,13 @@ export default async function SettingsPage({
     inviteCode = h?.invite_code ?? null;
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: todayLogs } = await supabase
-    .from("nutrition_log")
-    .select("calories_per_serving, servings")
-    .eq("consumed_at", today);
-  const todayKcal = (todayLogs ?? []).reduce((sum, l) => sum + Number(l.calories_per_serving) * Number(l.servings), 0);
-
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Ton profil</h1>
+        <Link href="/health" className="text-sm text-muted hover:text-foreground">
+          ← Profil
+        </Link>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Paramètres</h1>
         <p className="mt-0.5 text-sm text-muted">
           Modifie tes informations, tes préférences et retrouve le code de ton foyer.
         </p>
@@ -75,19 +71,6 @@ export default async function SettingsPage({
           <CopyCode code={inviteCode} />
         </div>
       )}
-
-      <Link
-        href="/health"
-        className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-accent"
-      >
-        <div>
-          <p className="text-sm font-medium text-foreground">Suivi santé</p>
-          <p className="mt-0.5 text-xs text-muted-2">
-            {Math.round(todayKcal)} kcal aujourd&apos;hui — journal, historique et coach nutrition/sport.
-          </p>
-        </div>
-        <span className="shrink-0 text-accent">→</span>
-      </Link>
 
       <form action={updateProfile} className="flex flex-col gap-5 rounded-2xl border border-border bg-surface p-4 sm:p-6">
         <div>

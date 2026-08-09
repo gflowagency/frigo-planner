@@ -53,7 +53,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    href: "/settings",
+    href: "/health",
     label: "Profil",
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
