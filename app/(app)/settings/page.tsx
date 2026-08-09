@@ -33,13 +33,15 @@ export default async function SettingsPage({
   if (!profile) redirect("/onboarding");
 
   let inviteCode: string | null = null;
+  let alexaCode: string | null = null;
   if (profile.household_id) {
     const { data: h } = await supabase
       .from("households")
-      .select("invite_code")
+      .select("invite_code, alexa_link_code")
       .eq("id", profile.household_id)
       .single();
     inviteCode = h?.invite_code ?? null;
+    alexaCode = h?.alexa_link_code ?? null;
   }
 
   return (
@@ -69,6 +71,21 @@ export default async function SettingsPage({
             </p>
           </div>
           <CopyCode code={inviteCode} />
+        </div>
+      )}
+
+      {alexaCode && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Code de liaison Alexa</p>
+            <p className="mt-0.5 font-mono text-lg font-semibold tracking-wide text-accent">
+              {alexaCode.slice(0, 3)} {alexaCode.slice(3)}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-2">
+              Dis à Alexa &laquo;&nbsp;lie mon compte, suivi de ce code&nbsp;&raquo; pour logger tes repas à la voix.
+            </p>
+          </div>
+          <CopyCode code={alexaCode} />
         </div>
       )}
 

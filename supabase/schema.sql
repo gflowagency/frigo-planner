@@ -295,3 +295,66 @@ alter table nutrition_log add column if not exists meal_slot text check (meal_sl
 
 create policy "delete household nutrition log" on nutrition_log for delete to authenticated using (household_id = my_household_id());
 
+-- Alexa voice logging: a 6-digit code per household (spoken once to link an
+-- Amazon account), and the resulting alexa_user_id -> household_id mapping.
+-- The webhook itself has no Supabase session (Amazon calls it directly), so
+-- it authorizes purely through these SECURITY DEFINER RPCs rather than RLS.
+alter table households add column if not exists alexa_link_code text unique default lpad((floor(random() * 1000000))::text, 6, '0');
+
+create table if not exists alexa_links (
+  alexa_user_id text primary key,
+  household_id uuid not null references households(id) on delete cascade,
+  linked_at timestamptz not null default now()
+);
+
+alter table alexa_links enable row level security;
+create policy "select own household alexa link" on alexa_links for select to authenticated using (household_id = my_household_id());
+
+create or replace function alexa_link_account(p_code text, p_alexa_user_id text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  target_household uuid;
+begin
+  select id into target_household from households where alexa_link_code = p_code;
+  if target_household is null then
+    return false;
+  end if;
+
+  insert into alexa_links (alexa_user_id, household_id)
+  values (p_alexa_user_id, target_household)
+  on conflict (alexa_user_id) do update set household_id = excluded.household_id, linked_at = now();
+
+  return true;
+end;
+$$;
+
+create or replace function alexa_log_food(p_alexa_user_id text, p_food_name text, p_kcal numeric, p_nutrients jsonb, p_meal_slot text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  target_household uuid;
+begin
+  select household_id into target_household from alexa_links where alexa_user_id = p_alexa_user_id;
+  if target_household is null then
+    return false;
+  end if;
+
+  insert into nutrition_log (household_id, food_name, calories_per_serving, servings, nutrients, source, meal_slot)
+  values (target_household, p_food_name, p_kcal, 1, p_nutrients, 'manual', p_meal_slot);
+
+  return true;
+end;
+$$;
+
+revoke execute on function alexa_link_account(text, text) from public;
+revoke execute on function alexa_log_food(text, text, numeric, jsonb, text) from public;
+grant execute on function alexa_link_account(text, text) to anon, authenticated;
+grant execute on function alexa_log_food(text, text, numeric, jsonb, text) to anon, authenticated;
+
