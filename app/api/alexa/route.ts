@@ -64,8 +64,11 @@ export async function POST(request: NextRequest) {
     if (!alexaUserId) return speak("Une erreur est survenue, réessaie plus tard.", false);
 
     if (requestType === "LaunchRequest") {
+      const { data: linked } = await supabase.rpc("alexa_is_linked", { p_alexa_user_id: alexaUserId });
       return speak(
-        "Dis-moi ce que tu as mangé. Si c'est la première fois, dis d'abord : lie mon compte, suivi de ton code à six chiffres, disponible dans les paramètres de Frigo Planner.",
+        linked
+          ? "Dis-moi ce que tu as mangé."
+          : "Dis-moi ce que tu as mangé. Si c'est la première fois, dis d'abord : lie mon compte, suivi de ton code à six chiffres, disponible dans les paramètres de Frigo Planner.",
       );
     }
 

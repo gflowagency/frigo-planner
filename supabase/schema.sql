@@ -385,8 +385,22 @@ begin
 end;
 $$;
 
+-- Lets LaunchRequest greet a household differently once it's already
+-- linked, instead of repeating the linking instructions every time.
+create or replace function alexa_is_linked(p_alexa_user_id text)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select exists (select 1 from alexa_links where alexa_user_id = p_alexa_user_id);
+$$;
+
 revoke execute on function alexa_link_account(text, text) from public;
 revoke execute on function alexa_log_food(text, text, numeric, jsonb, text) from public;
+revoke execute on function alexa_is_linked(text) from public;
 grant execute on function alexa_link_account(text, text) to anon, authenticated;
 grant execute on function alexa_log_food(text, text, numeric, jsonb, text) to anon, authenticated;
+grant execute on function alexa_is_linked(text) to anon, authenticated;
 
