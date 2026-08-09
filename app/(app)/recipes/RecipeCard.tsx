@@ -1,8 +1,8 @@
 type RecipeLike = {
   title: string;
-  description: string;
+  description: string | null;
   servings: number;
-  estimated_calories_per_serving: number;
+  estimated_calories_per_serving: number | null;
   ingredients: { name: string; quantity: string; have_in_stock: boolean }[];
   instructions: string[];
 };
@@ -18,11 +18,13 @@ export default function RecipeCard({
     <article className="rounded-2xl border border-border bg-surface p-5">
       <div className="mb-2 flex items-start justify-between gap-3">
         <h3 className="text-[17px] font-semibold tracking-tight text-foreground">{recipe.title}</h3>
-        <span className="whitespace-nowrap rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium tabular-nums text-accent-hover">
-          ~{recipe.estimated_calories_per_serving} kcal / part
-        </span>
+        {recipe.estimated_calories_per_serving != null && (
+          <span className="whitespace-nowrap rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium tabular-nums text-accent-hover">
+            ~{recipe.estimated_calories_per_serving} kcal / part
+          </span>
+        )}
       </div>
-      <p className="mb-3 text-sm text-muted">{recipe.description}</p>
+      {recipe.description && <p className="mb-3 text-sm text-muted">{recipe.description}</p>}
       <p className="mb-3 text-xs font-medium text-muted-2">
         Pour {recipe.servings} personne{recipe.servings > 1 ? "s" : ""}
       </p>

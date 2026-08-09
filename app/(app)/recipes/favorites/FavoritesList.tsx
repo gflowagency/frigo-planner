@@ -7,9 +7,9 @@ import { deleteFavoriteRecipe } from "../favorites-actions";
 type Favorite = {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   servings: number;
-  estimated_calories_per_serving: number;
+  estimated_calories_per_serving: number | null;
   ingredients: { name: string; quantity: string; have_in_stock: boolean }[];
   instructions: string[];
 };
