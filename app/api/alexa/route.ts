@@ -33,15 +33,16 @@ function speak(text: string) {
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const certUrl = request.headers.get("signaturecertchainurl");
+  const signature256 = request.headers.get("signature-256");
   const signature = request.headers.get("signature");
 
-  if (!certUrl || !signature) {
+  if (!certUrl || (!signature256 && !signature)) {
     console.error("Alexa request missing signature headers");
     return NextResponse.json({ error: "missing signature headers" }, { status: 401 });
   }
 
   try {
-    await verifyAlexaRequest(certUrl, signature, rawBody);
+    await verifyAlexaRequest(certUrl, { signature256, signature }, rawBody);
   } catch (err) {
     console.error("Alexa signature verification failed:", err);
     return NextResponse.json({ error: "invalid signature" }, { status: 401 });

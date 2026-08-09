@@ -55,10 +55,26 @@ function validateCertPem(pem: string): string {
   return pem;
 }
 
-function validateSignature(pem: string, signature: string, rawBody: string) {
-  const verifier = crypto.createVerify("RSA-SHA256");
-  verifier.update(rawBody, "utf8");
-  if (!verifier.verify(pem, signature, "base64")) throw new Error("Request signature does not match");
+type SignatureHeaders = { signature256: string | null; signature: string | null };
+
+// Amazon sends two signature headers: the legacy `Signature` (RSA-SHA1) and
+// the current `Signature-256` (RSA-SHA256) — each is only valid against its
+// own hash algorithm. Prefer the modern SHA-256 pairing; fall back to SHA-1
+// only if that header is somehow absent.
+function validateSignature(pem: string, headers: SignatureHeaders, rawBody: string) {
+  if (headers.signature256) {
+    const verifier = crypto.createVerify("RSA-SHA256");
+    verifier.update(rawBody, "utf8");
+    if (verifier.verify(pem, headers.signature256, "base64")) return;
+    throw new Error("Request signature (SHA-256) does not match");
+  }
+  if (headers.signature) {
+    const verifier = crypto.createVerify("RSA-SHA1");
+    verifier.update(rawBody, "utf8");
+    if (verifier.verify(pem, headers.signature, "base64")) return;
+    throw new Error("Request signature (SHA-1) does not match");
+  }
+  throw new Error("No signature header present");
 }
 
 function validateTimestamp(rawBody: string) {
@@ -75,7 +91,7 @@ function validateTimestamp(rawBody: string) {
 }
 
 /** Full verification an Alexa custom-skill HTTPS endpoint must perform on every incoming request. */
-export async function verifyAlexaRequest(certUrl: string, signature: string, rawBody: string): Promise<void> {
+export async function verifyAlexaRequest(certUrl: string, headers: SignatureHeaders, rawBody: string): Promise<void> {
   validateCertUrl(certUrl);
   validateTimestamp(rawBody);
 
@@ -85,5 +101,5 @@ export async function verifyAlexaRequest(certUrl: string, signature: string, raw
     certCache.set(certUrl, pem);
   }
 
-  validateSignature(pem, signature, rawBody);
+  validateSignature(pem, headers, rawBody);
 }
