@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/auth"];
+// Alexa calls this webhook directly, with no Supabase session cookie — it
+// authorizes itself via request signature verification, not a login.
+const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/api/alexa"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
