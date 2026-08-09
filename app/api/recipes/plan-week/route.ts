@@ -60,7 +60,7 @@ ${membersText || "(profils non renseignés)"}
 Stock actuel du frigo et des placards :
 ${stockText}
 
-Propose un dîner différent pour CHACUN des 7 prochains jours (aucun plat répété sur la semaine), en utilisant le stock actuel réparti intelligemment sur les 7 jours (ne suppose pas qu'un ingrédient en quantité limitée est disponible tous les jours — varie les sources de protéines et de féculents d'un jour à l'autre). Respecte strictement les préférences et contraintes alimentaires listées pour chaque membre (allergie, régime, aliments exclus) — ce sont des restrictions non négociables. Adapte les portions/calories aux objectifs du foyer. Donne des instructions de cuisson précises et des quantités exactes par personne pour chaque jour. Utilise l'outil propose_week_plan pour répondre.`;
+Propose un dîner différent pour CHACUN des 7 prochains jours (aucun plat répété sur la semaine), en utilisant le stock actuel réparti intelligemment sur les 7 jours (ne suppose pas qu'un ingrédient en quantité limitée est disponible tous les jours — varie les sources de protéines et de féculents d'un jour à l'autre). Respecte strictement les préférences et contraintes alimentaires listées pour chaque membre (allergie, régime, aliments exclus) — ce sont des restrictions non négociables, pas de simples suggestions. Adapte les portions/calories pour satisfaire les deux objectifs caloriques quand ils diffèrent (par exemple en suggérant des variantes de quantité par personne dans la description). Donne des instructions de cuisson précises et des quantités exactes par personne pour chaque jour. Utilise l'outil propose_week_plan pour répondre.`;
 
   let message;
   try {
