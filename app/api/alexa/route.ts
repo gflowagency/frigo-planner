@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import alexaVerifier from "alexa-verifier";
+import { verifyAlexaRequest } from "@/lib/alexa-verify";
 import { estimateNutrients } from "@/lib/estimate-nutrients";
 
 // No user session exists for an Alexa-originated request — authorization is
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await alexaVerifier(certUrl, signature, rawBody);
+    await verifyAlexaRequest(certUrl, signature, rawBody);
   } catch (err) {
     console.error("Alexa signature verification failed:", err);
     return NextResponse.json({ error: "invalid signature" }, { status: 401 });
