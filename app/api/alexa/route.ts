@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyAlexaRequest } from "@/lib/alexa-verify";
-import { estimateNutrients } from "@/lib/estimate-nutrients";
 
 // No user session exists for an Alexa-originated request — authorization is
 // enforced entirely inside the alexa_link_account / alexa_log_food
 // SECURITY DEFINER functions, not by a logged-in Supabase session.
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-// Cert-chain fetch + verification + (on LogFoodIntent) a Claude call can add
-// up; the platform default timeout is tight enough that it's worth raising.
+// Cert-chain fetch + verification is the main cost now that LogFoodIntent
+// no longer makes a Claude call, but the platform default is still tight.
 export const maxDuration = 15;
-
-function guessCurrentMealSlot(): string {
-  const hour = new Date().getHours();
-  if (hour < 11) return "matin";
-  if (hour < 15) return "midi";
-  if (hour < 19) return "gouter";
-  return "soir";
-}
 
 // Keeping the session open (shouldEndSession: false) lets the user chain
 // several turns — "ouvre frigo planner" once, then "j'ai mangé une pomme",
@@ -110,22 +101,9 @@ export async function POST(request: NextRequest) {
         const food: string | undefined = body.request.intent.slots?.food?.value;
         if (!food) return speak("Je n'ai pas compris ce que tu as mangé, réessaie.");
 
-        let kcal: number;
-        let nutrients;
-        try {
-          nutrients = await estimateNutrients(food, { mode: "portion" });
-          kcal = nutrients.kcal;
-        } catch (err) {
-          console.error("Alexa estimateNutrients failed:", err);
-          return speak("Je n'ai pas réussi à estimer ça, réessaie dans un instant.");
-        }
-
         const { data: result, error } = await supabase.rpc("alexa_log_food", {
           p_alexa_user_id: alexaUserId,
           p_food_name: food,
-          p_kcal: kcal,
-          p_nutrients: nutrients,
-          p_meal_slot: guessCurrentMealSlot(),
         });
         if (error) {
           console.error("alexa_log_food failed:", error.message);
@@ -140,9 +118,7 @@ export async function POST(request: NextRequest) {
 
         const deducted = (result as { deducted?: string | null }).deducted;
         return speak(
-          deducted
-            ? `Noté : ${food}, environ ${Math.round(kcal)} calories. J'ai aussi retiré ${deducted} du stock.`
-            : `Noté : ${food}, environ ${Math.round(kcal)} calories.`,
+          deducted ? `J'ai retiré ${deducted} du stock.` : `Je n'ai pas trouvé ${food} dans ton stock.`,
         );
       }
     }

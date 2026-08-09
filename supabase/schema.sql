@@ -332,12 +332,13 @@ begin
 end;
 $$;
 
--- Return type changed from boolean to jsonb (now also reports a stock
--- deduction) — Postgres requires dropping first since CREATE OR REPLACE
--- can't change a function's return type.
+-- Signature changed again: no longer logs to nutrition_log at all — Alexa
+-- "j'ai mangé X" is stock-only now (calorie tracking stays a deliberate
+-- in-app action via the journal). Drop first since CREATE OR REPLACE can't
+-- change parameters/return type.
 drop function if exists alexa_log_food(text, text, numeric, jsonb, text);
 
-create or replace function alexa_log_food(p_alexa_user_id text, p_food_name text, p_kcal numeric, p_nutrients jsonb, p_meal_slot text)
+create or replace function alexa_log_food(p_alexa_user_id text, p_food_name text)
 returns jsonb
 language plpgsql
 security definer
@@ -353,9 +354,6 @@ begin
   if target_household is null then
     return jsonb_build_object('linked', false);
   end if;
-
-  insert into nutrition_log (household_id, food_name, calories_per_serving, servings, nutrients, source, meal_slot)
-  values (target_household, p_food_name, p_kcal, 1, p_nutrients, 'manual', p_meal_slot);
 
   -- Best-effort match against current stock (same bidirectional substring
   -- idea as lib/pantry-match.ts, just in SQL — this webhook has no
@@ -398,9 +396,9 @@ as $$
 $$;
 
 revoke execute on function alexa_link_account(text, text) from public;
-revoke execute on function alexa_log_food(text, text, numeric, jsonb, text) from public;
+revoke execute on function alexa_log_food(text, text) from public;
 revoke execute on function alexa_is_linked(text) from public;
 grant execute on function alexa_link_account(text, text) to anon, authenticated;
-grant execute on function alexa_log_food(text, text, numeric, jsonb, text) to anon, authenticated;
+grant execute on function alexa_log_food(text, text) to anon, authenticated;
 grant execute on function alexa_is_linked(text) to anon, authenticated;
 
