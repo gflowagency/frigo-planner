@@ -4,6 +4,7 @@ import { addPantryItem } from "../pantry-actions";
 import { PANTRY_CATEGORIES } from "@/lib/categories";
 import PantryList from "./PantryList";
 import QuickAdd from "./QuickAdd";
+import BackfillNutrientsButton from "./BackfillNutrientsButton";
 
 const fieldClass =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
@@ -24,6 +25,12 @@ export default async function DashboardPage() {
     .order("times_added", { ascending: false })
     .limit(8);
 
+  const { count: missingNutrientsCount } = await supabase
+    .from("pantry_items")
+    .select("id", { count: "exact", head: true })
+    .not("barcode", "is", null)
+    .is("nutrients", null);
+
   return (
     <div className="flex flex-col gap-7">
       <div className="flex items-center justify-between gap-4">
@@ -32,6 +39,7 @@ export default async function DashboardPage() {
           <p className="mt-0.5 text-sm text-muted">
             {count} article{count > 1 ? "s" : ""} dans le frigo et les placards.
           </p>
+          <BackfillNutrientsButton eligible={missingNutrientsCount ?? 0} />
         </div>
         <Link
           href="/scan"

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { currentHouseholdAndUser } from "@/lib/household";
 import { trackFrequentItem } from "@/lib/frequent-items";
+import { lookupProduct } from "@/lib/openfoodfacts";
 
 export async function addPantryItem(formData: FormData) {
   const { supabase, userId, householdId } = await currentHouseholdAndUser();
@@ -117,6 +118,41 @@ async function bumpFrequentItem(supabase: Awaited<ReturnType<typeof currentHouse
     .from("frequent_items")
     .update({ times_added: (current?.times_added ?? 0) + 1, last_added_at: new Date().toISOString() })
     .eq("id", id);
+}
+
+/**
+ * One-shot catch-up for items that were scanned before nutrient tracking
+ * existed (or added while offline): re-queries OpenFoodFacts by barcode and
+ * fills in nutriscore/nutrients without touching anything else (quantity,
+ * name, etc. may have been edited by hand since).
+ */
+export async function backfillNutrients() {
+  const { supabase, householdId } = await currentHouseholdAndUser();
+
+  const { data: items } = await supabase
+    .from("pantry_items")
+    .select("id, barcode")
+    .eq("household_id", householdId)
+    .not("barcode", "is", null)
+    .is("nutrients", null);
+
+  if (!items || items.length === 0) return { updated: 0, total: 0 };
+
+  let updated = 0;
+  for (const item of items) {
+    const product = await lookupProduct(item.barcode as string);
+    if (!product.found || !product.nutrients) continue;
+
+    const { error } = await supabase
+      .from("pantry_items")
+      .update({ nutriscore: product.nutriscore ?? null, nutrients: product.nutrients })
+      .eq("id", item.id);
+    if (error) console.error("backfillNutrients (update) failed:", error.message);
+    else updated += 1;
+  }
+
+  revalidatePath("/dashboard");
+  return { updated, total: items.length };
 }
 
 export async function deletePantryItem(formData: FormData) {
