@@ -17,8 +17,10 @@ export async function addPantryItem(formData: FormData) {
   const category = (formData.get("category") as string) || "autre";
   const unit = (formData.get("unit") as string) || "piece";
   const nutriscore = (formData.get("nutriscore") as string) || null;
+  const ecoscore = (formData.get("ecoscore") as string) || null;
   const nutrientsRaw = (formData.get("nutrients") as string) || null;
   const nutrients = nutrientsRaw ? JSON.parse(nutrientsRaw) : null;
+  const nutrientsEstimated = formData.get("nutrientsEstimated") === "true";
 
   // Re-scanning a barcode already in stock tops up the existing row instead
   // of creating a duplicate line for the same product.
@@ -58,7 +60,9 @@ export async function addPantryItem(formData: FormData) {
     unit,
     image_url: (formData.get("imageUrl") as string) || null,
     nutriscore,
+    ecoscore,
     nutrients,
+    nutrients_estimated: nutrientsEstimated,
   });
   if (error) console.error("addPantryItem (insert) failed:", error.message);
 
@@ -122,9 +126,11 @@ async function bumpFrequentItem(supabase: Awaited<ReturnType<typeof currentHouse
 
 /**
  * One-shot catch-up for items that were scanned before nutrient tracking
- * existed (or added while offline): re-queries OpenFoodFacts by barcode and
- * fills in nutriscore/nutrients without touching anything else (quantity,
- * name, etc. may have been edited by hand since).
+ * existed (or added while offline), or that only have an AI-estimated
+ * guess: re-queries OpenFoodFacts by barcode and fills in real
+ * nutriscore/ecoscore/nutrients, without touching anything else (quantity,
+ * name, etc. may have been edited by hand since). Real data always wins
+ * over a prior AI estimate.
  */
 export async function backfillNutrients() {
   const { supabase, householdId } = await currentHouseholdAndUser();
@@ -134,7 +140,7 @@ export async function backfillNutrients() {
     .select("id, barcode")
     .eq("household_id", householdId)
     .not("barcode", "is", null)
-    .is("nutrients", null);
+    .or("nutrients.is.null,nutrients_estimated.eq.true");
 
   if (!items || items.length === 0) return { updated: 0, total: 0 };
 
@@ -145,7 +151,12 @@ export async function backfillNutrients() {
 
     const { error } = await supabase
       .from("pantry_items")
-      .update({ nutriscore: product.nutriscore ?? null, nutrients: product.nutrients })
+      .update({
+        nutriscore: product.nutriscore ?? null,
+        ecoscore: product.ecoscore ?? null,
+        nutrients: product.nutrients,
+        nutrients_estimated: false,
+      })
       .eq("id", item.id);
     if (error) console.error("backfillNutrients (update) failed:", error.message);
     else updated += 1;

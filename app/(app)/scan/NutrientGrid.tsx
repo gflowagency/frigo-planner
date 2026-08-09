@@ -9,7 +9,13 @@ const NUTRIENT_LABELS: Record<string, string> = {
   sel: "Sel",
 };
 
-export default function NutrientGrid({ nutrients }: { nutrients: Record<string, number> }) {
+export default function NutrientGrid({
+  nutrients,
+  estimated,
+}: {
+  nutrients: Record<string, number>;
+  estimated?: boolean;
+}) {
   return (
     <div className="grid grid-cols-4 gap-2 rounded-xl bg-background p-3 text-center">
       {Object.entries(nutrients).map(([key, value]) => (
@@ -21,7 +27,9 @@ export default function NutrientGrid({ nutrients }: { nutrients: Record<string, 
           <p className="text-[10px] leading-tight text-muted-2">{NUTRIENT_LABELS[key] ?? key}</p>
         </div>
       ))}
-      <p className="col-span-4 -mt-1 text-[10px] text-muted-2">pour 100 g</p>
+      <p className="col-span-4 -mt-1 text-[10px] text-muted-2">
+        pour 100 g{estimated ? " — estimation IA, à titre indicatif" : ""}
+      </p>
     </div>
   );
 }

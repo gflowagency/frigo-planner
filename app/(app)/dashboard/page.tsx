@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: items } = await supabase
     .from("pantry_items")
-    .select("id, name, brand, category, quantity, unit, image_url, nutriscore, nutrients")
+    .select("id, name, brand, category, quantity, unit, image_url, nutriscore, ecoscore, nutrients, nutrients_estimated")
     .order("category", { ascending: true })
     .order("name", { ascending: true });
 
@@ -29,7 +29,7 @@ export default async function DashboardPage() {
     .from("pantry_items")
     .select("id", { count: "exact", head: true })
     .not("barcode", "is", null)
-    .is("nutrients", null);
+    .or("nutrients.is.null,nutrients_estimated.eq.true");
 
   return (
     <div className="flex flex-col gap-7">

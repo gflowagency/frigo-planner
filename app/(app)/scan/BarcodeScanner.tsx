@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { PANTRY_CATEGORIES } from "@/lib/categories";
 import { enqueuePantryItem, flushPantryQueue, readQueue } from "@/lib/pantry-queue";
+import { checkAllergenConflicts } from "@/lib/allergen-check";
 import NutriscoreBadge from "./NutriscoreBadge";
+import EcoscoreBadge from "./EcoscoreBadge";
 import NutrientGrid from "./NutrientGrid";
 
 type LookupResult = {
@@ -19,21 +21,27 @@ type LookupResult = {
   quantity?: number | null;
   unit?: string | null;
   nutriscore?: string | null;
+  ecoscore?: string | null;
   nutrients?: Record<string, number> | null;
+  allergensTags?: string[];
+  ingredientsText?: string | null;
 };
 
 const fieldClass =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
 
-export default function BarcodeScanner() {
+export default function BarcodeScanner({ dietaryPreferences }: { dietaryPreferences?: string | null }) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LookupResult | null>(null);
   const [loadingLookup, setLoadingLookup] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [queuedCount, setQueuedCount] = useState(0);
+  const [estimatedNutrients, setEstimatedNutrients] = useState<Record<string, number> | null>(null);
+  const [estimating, setEstimating] = useState(false);
 
   useEffect(() => {
     setQueuedCount(readQueue().length);
@@ -112,12 +120,32 @@ export default function BarcodeScanner() {
   function reset() {
     setResult(null);
     setError(null);
+    setEstimatedNutrients(null);
     setScanning(true);
+  }
+
+  async function estimateNutrients(name: string, brand: string | null) {
+    setEstimating(true);
+    try {
+      const res = await fetch("/api/estimate-nutrients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, brand }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Échec de l'estimation");
+      setEstimatedNutrients(data.nutrients);
+    } catch {
+      setError("Impossible d'estimer les nutriments pour le moment.");
+    } finally {
+      setEstimating(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const nutrients = result?.nutrients ?? estimatedNutrients;
     const payload = {
       barcode: result?.barcode ?? null,
       name: String(formData.get("name") ?? "").trim(),
@@ -127,7 +155,9 @@ export default function BarcodeScanner() {
       unit: (formData.get("unit") as string) || "piece",
       imageUrl: result?.imageUrl ?? null,
       nutriscore: result?.nutriscore ?? null,
-      nutrients: result?.nutrients ?? null,
+      ecoscore: result?.ecoscore ?? null,
+      nutrients,
+      nutrientsEstimated: !result?.nutrients && !!estimatedNutrients,
     };
     if (!payload.name) return;
 
@@ -204,7 +234,7 @@ export default function BarcodeScanner() {
       )}
 
       {result && (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-center gap-3">
             {result.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -220,6 +250,7 @@ export default function BarcodeScanner() {
                   {result.found ? result.name : "Produit inconnu"}
                 </p>
                 {result.nutriscore && <NutriscoreBadge grade={result.nutriscore} />}
+                {result.ecoscore && <EcoscoreBadge grade={result.ecoscore} />}
               </div>
               {result.brand && <p className="text-xs text-muted-2">{result.brand}</p>}
               {!result.found && (
@@ -235,7 +266,38 @@ export default function BarcodeScanner() {
             </div>
           </div>
 
-          {result.nutrients && <NutrientGrid nutrients={result.nutrients} />}
+          {(() => {
+            const conflicts = checkAllergenConflicts(dietaryPreferences, {
+              allergensTags: result.allergensTags,
+              ingredientsText: result.ingredientsText,
+            });
+            if (conflicts.length === 0) return null;
+            return (
+              <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
+                ⚠️ Contient {conflicts.join(", ")} — présent dans tes préférences alimentaires.
+              </p>
+            );
+          })()}
+
+          {result.nutrients ? (
+            <NutrientGrid nutrients={result.nutrients} />
+          ) : estimatedNutrients ? (
+            <NutrientGrid nutrients={estimatedNutrients} estimated />
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const fd = new FormData(formRef.current!);
+                const name = String(fd.get("name") ?? "").trim();
+                const brand = (fd.get("brand") as string) || null;
+                if (name) void estimateNutrients(name, brand);
+              }}
+              disabled={estimating}
+              className="self-start rounded-xl border border-dashed border-border px-3.5 py-2 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+            >
+              {estimating ? "Estimation en cours…" : "✨ Estimer les nutriments avec l'IA"}
+            </button>
+          )}
 
           <input
             name="name"

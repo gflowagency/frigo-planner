@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { addPantryItem } from "../../pantry-actions";
 import { PANTRY_CATEGORIES } from "@/lib/categories";
+import { checkAllergenConflicts } from "@/lib/allergen-check";
 import NutriscoreBadge from "../NutriscoreBadge";
+import EcoscoreBadge from "../EcoscoreBadge";
 
 type ImportItem = {
   barcode: string;
@@ -18,13 +20,16 @@ type ImportItem = {
   quantity: number;
   unit: string;
   nutriscore: string | null;
+  ecoscore: string | null;
   nutrients: Record<string, number> | null;
+  allergensTags?: string[];
+  ingredientsText?: string | null;
   selected: boolean;
 };
 
 type Phase = "idle" | "decoding" | "review" | "saving" | "done";
 
-export default function PhotoImport() {
+export default function PhotoImport({ dietaryPreferences }: { dietaryPreferences?: string | null }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState({ done: 0, total: 0 });
@@ -74,7 +79,10 @@ export default function PhotoImport() {
             quantity: (data.quantity ?? 1) * count,
             unit: data.unit ?? "piece",
             nutriscore: data.nutriscore ?? null,
+            ecoscore: data.ecoscore ?? null,
             nutrients: data.nutrients ?? null,
+            allergensTags: data.allergensTags ?? [],
+            ingredientsText: data.ingredientsText ?? null,
             selected: true,
           } satisfies ImportItem;
         } catch {
@@ -88,6 +96,7 @@ export default function PhotoImport() {
             quantity: count,
             unit: "piece",
             nutriscore: null,
+            ecoscore: null,
             nutrients: null,
             selected: true,
           } satisfies ImportItem;
@@ -116,6 +125,7 @@ export default function PhotoImport() {
       fd.set("unit", item.unit);
       fd.set("imageUrl", item.imageUrl ?? "");
       fd.set("nutriscore", item.nutriscore ?? "");
+      fd.set("ecoscore", item.ecoscore ?? "");
       fd.set("nutrients", item.nutrients ? JSON.stringify(item.nutrients) : "");
       await addPantryItem(fd);
     }
@@ -223,11 +233,22 @@ export default function PhotoImport() {
                         className="w-full rounded-lg border border-transparent bg-transparent px-1 text-[15px] font-medium text-foreground focus:border-accent focus:bg-background focus:outline-none"
                       />
                       {item.nutriscore && <NutriscoreBadge grade={item.nutriscore} />}
+                      {item.ecoscore && <EcoscoreBadge grade={item.ecoscore} />}
                     </div>
                     {!item.found && <p className="px-1 text-xs text-muted-2">Non trouvé, complète les infos</p>}
                     {item.found && item.source === "upcitemdb" && (
                       <p className="px-1 text-xs text-muted-2">Base de secours — sans nutriments</p>
                     )}
+                    {(() => {
+                      const conflicts = checkAllergenConflicts(dietaryPreferences, {
+                        allergensTags: item.allergensTags,
+                        ingredientsText: item.ingredientsText,
+                      });
+                      if (conflicts.length === 0) return null;
+                      return (
+                        <p className="px-1 text-xs font-medium text-danger">⚠️ Contient {conflicts.join(", ")}</p>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pl-8">

@@ -280,3 +280,9 @@ create policy "insert household meal plan" on meal_plan for insert to authentica
 create policy "update household meal plan" on meal_plan for update to authenticated using (household_id = my_household_id());
 create policy "delete household meal plan" on meal_plan for delete to authenticated using (household_id = my_household_id());
 
+-- Eco-score alongside Nutri-Score, and a flag distinguishing real OpenFoodFacts
+-- nutrients from AI-estimated ones (shown differently in the UI, and eligible
+-- to be overwritten by backfillNutrients if real data becomes available).
+alter table pantry_items add column if not exists ecoscore text;
+alter table pantry_items add column if not exists nutrients_estimated boolean not null default false;
+

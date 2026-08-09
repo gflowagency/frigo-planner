@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { adjustPantryQuantity, deletePantryItem } from "../pantry-actions";
 import { categoryLabel, categoryEmoji } from "@/lib/categories";
 import NutriscoreBadge from "../scan/NutriscoreBadge";
+import EcoscoreBadge from "../scan/EcoscoreBadge";
 import NutrientGrid from "../scan/NutrientGrid";
 
 type PantryItem = {
@@ -15,7 +16,9 @@ type PantryItem = {
   unit: string;
   image_url: string | null;
   nutriscore: string | null;
+  ecoscore: string | null;
   nutrients: Record<string, number> | null;
+  nutrients_estimated: boolean;
 };
 
 export default function PantryList({ items }: { items: PantryItem[] }) {
@@ -85,6 +88,7 @@ export default function PantryList({ items }: { items: PantryItem[] }) {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     {item.nutriscore && <NutriscoreBadge grade={item.nutriscore} />}
+                    {item.ecoscore && <EcoscoreBadge grade={item.ecoscore} />}
                     <div className="min-w-0">
                       <p className="truncate text-[15px] font-medium text-foreground">{item.name}</p>
                       {item.brand && <p className="text-xs text-muted-2">{item.brand}</p>}
@@ -151,7 +155,7 @@ export default function PantryList({ items }: { items: PantryItem[] }) {
                 </div>
                 {expandedId === item.id && item.nutrients && (
                   <div className="mt-3">
-                    <NutrientGrid nutrients={item.nutrients} />
+                    <NutrientGrid nutrients={item.nutrients} estimated={item.nutrients_estimated} />
                   </div>
                 )}
               </li>

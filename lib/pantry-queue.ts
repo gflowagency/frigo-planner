@@ -9,7 +9,9 @@ export type QueuedPantryItem = {
   unit: string;
   imageUrl: string | null;
   nutriscore: string | null;
+  ecoscore: string | null;
   nutrients: Record<string, number> | null;
+  nutrientsEstimated: boolean;
 };
 
 export function readQueue(): QueuedPantryItem[] {

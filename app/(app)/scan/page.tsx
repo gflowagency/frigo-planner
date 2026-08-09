@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { currentHouseholdDietaryPreferences } from "@/lib/household";
 import BarcodeScanner from "./BarcodeScanner";
 
-export default function ScanPage() {
+export default async function ScanPage() {
+  const dietaryPreferences = await currentHouseholdDietaryPreferences();
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
@@ -18,7 +21,7 @@ export default function ScanPage() {
           Importer des photos
         </Link>
       </div>
-      <BarcodeScanner />
+      <BarcodeScanner dietaryPreferences={dietaryPreferences} />
     </div>
   );
 }

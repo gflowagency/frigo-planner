@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { currentHouseholdDietaryPreferences } from "@/lib/household";
 import PhotoImport from "./PhotoImport";
 
-export default function ImportPage() {
+export default async function ImportPage() {
+  const dietaryPreferences = await currentHouseholdDietaryPreferences();
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -18,7 +21,7 @@ export default function ImportPage() {
           d&apos;un coup une fois connecté.
         </p>
       </div>
-      <PhotoImport />
+      <PhotoImport dietaryPreferences={dietaryPreferences} />
     </div>
   );
 }

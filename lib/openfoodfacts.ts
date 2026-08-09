@@ -83,7 +83,10 @@ export type OffProduct = {
   quantity?: number | null;
   unit?: string | null;
   nutriscore?: string | null;
+  ecoscore?: string | null;
   nutrients?: Record<string, number> | null;
+  allergensTags?: string[];
+  ingredientsText?: string | null;
 };
 
 /**
@@ -140,7 +143,10 @@ export async function lookupProduct(code: string): Promise<OffProduct> {
         quantity: parsedQuantity?.quantity ?? null,
         unit: parsedQuantity?.unit ?? guessUnit(product.categories_tags, product.product_name_fr || product.product_name),
         nutriscore: product.nutriscore_grade && product.nutriscore_grade !== "unknown" ? product.nutriscore_grade : null,
+        ecoscore: product.ecoscore_grade && product.ecoscore_grade !== "unknown" && product.ecoscore_grade !== "not-applicable" ? product.ecoscore_grade : null,
         nutrients: pickNutrients(product.nutriments),
+        allergensTags: Array.isArray(product.allergens_tags) ? product.allergens_tags : [],
+        ingredientsText: product.ingredients_text_fr || product.ingredients_text || null,
       };
     }
   }

@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
   const unit = body.unit || "piece";
   const imageUrl = body.imageUrl || null;
   const nutriscore = body.nutriscore || null;
+  const ecoscore = body.ecoscore || null;
   const nutrients = body.nutrients || null;
+  const nutrientsEstimated = Boolean(body.nutrientsEstimated);
 
   if (barcode) {
     const { data: existing } = await supabase
@@ -60,7 +62,9 @@ export async function POST(request: NextRequest) {
     unit,
     image_url: imageUrl,
     nutriscore,
+    ecoscore,
     nutrients,
+    nutrients_estimated: nutrientsEstimated,
   });
   if (error) {
     console.error("pantry-items POST (insert) failed:", error.message);
