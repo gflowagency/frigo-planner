@@ -332,24 +332,56 @@ begin
 end;
 $$;
 
+-- Return type changed from boolean to jsonb (now also reports a stock
+-- deduction) — Postgres requires dropping first since CREATE OR REPLACE
+-- can't change a function's return type.
+drop function if exists alexa_log_food(text, text, numeric, jsonb, text);
+
 create or replace function alexa_log_food(p_alexa_user_id text, p_food_name text, p_kcal numeric, p_nutrients jsonb, p_meal_slot text)
-returns boolean
+returns jsonb
 language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
 declare
   target_household uuid;
+  matched_item record;
+  new_quantity numeric;
+  deducted_name text := null;
 begin
   select household_id into target_household from alexa_links where alexa_user_id = p_alexa_user_id;
   if target_household is null then
-    return false;
+    return jsonb_build_object('linked', false);
   end if;
 
   insert into nutrition_log (household_id, food_name, calories_per_serving, servings, nutrients, source, meal_slot)
   values (target_household, p_food_name, p_kcal, 1, p_nutrients, 'manual', p_meal_slot);
 
-  return true;
+  -- Best-effort match against current stock (same bidirectional substring
+  -- idea as lib/pantry-match.ts, just in SQL — this webhook has no
+  -- application session to call that helper from). If matched, deduct one
+  -- unit exactly like "Marquer comme préparée" does for recipes.
+  select id, name, quantity into matched_item
+  from pantry_items
+  where household_id = target_household
+    and (
+      lower(name) like '%' || lower(p_food_name) || '%'
+      or lower(p_food_name) like '%' || lower(name) || '%'
+    )
+  order by length(name) asc
+  limit 1;
+
+  if matched_item.id is not null then
+    new_quantity := greatest(0, matched_item.quantity - 1);
+    if new_quantity = 0 then
+      delete from pantry_items where id = matched_item.id;
+    else
+      update pantry_items set quantity = new_quantity, updated_at = now() where id = matched_item.id;
+    end if;
+    deducted_name := matched_item.name;
+  end if;
+
+  return jsonb_build_object('linked', true, 'deducted', deducted_name);
 end;
 $$;
 

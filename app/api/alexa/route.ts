@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
           return speak("Je n'ai pas réussi à estimer ça, réessaie dans un instant.");
         }
 
-        const { data: logged, error } = await supabase.rpc("alexa_log_food", {
+        const { data: result, error } = await supabase.rpc("alexa_log_food", {
           p_alexa_user_id: alexaUserId,
           p_food_name: food,
           p_kcal: kcal,
@@ -124,13 +124,19 @@ export async function POST(request: NextRequest) {
           console.error("alexa_log_food failed:", error.message);
           return speak("Une erreur est survenue, réessaie plus tard.");
         }
-        if (!logged) {
+        const linked = (result as { linked?: boolean; deducted?: string | null } | null)?.linked;
+        if (!linked) {
           return speak(
             "Ton compte n'est pas encore lié. Dis : lie mon compte, suivi de ton code, disponible dans les paramètres de Frigo Planner.",
           );
         }
 
-        return speak(`Noté : ${food}, environ ${Math.round(kcal)} calories.`);
+        const deducted = (result as { deducted?: string | null }).deducted;
+        return speak(
+          deducted
+            ? `Noté : ${food}, environ ${Math.round(kcal)} calories. J'ai aussi retiré ${deducted} du stock.`
+            : `Noté : ${food}, environ ${Math.round(kcal)} calories.`,
+        );
       }
     }
 
