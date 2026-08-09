@@ -286,3 +286,12 @@ create policy "delete household meal plan" on meal_plan for delete to authentica
 alter table pantry_items add column if not exists ecoscore text;
 alter table pantry_items add column if not exists nutrients_estimated boolean not null default false;
 
+-- nutrition_log started as "recipe marked prepared" events only; broadened
+-- into a real food diary (anything eaten, not just cooked recipes).
+alter table nutrition_log rename column recipe_title to food_name;
+alter table nutrition_log add column if not exists nutrients jsonb;
+alter table nutrition_log add column if not exists source text not null default 'recipe' check (source in ('recipe', 'manual'));
+alter table nutrition_log add column if not exists meal_slot text check (meal_slot is null or meal_slot in ('matin', 'midi', 'gouter', 'soir'));
+
+create policy "delete household nutrition log" on nutrition_log for delete to authenticated using (household_id = my_household_id());
+

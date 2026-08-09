@@ -47,3 +47,22 @@ export async function currentHouseholdDietaryPreferences(): Promise<string | nul
       .join("; ") || null
   );
 }
+
+/** Sum of every household member's daily calorie target — the household-level baseline used across the health dashboard. */
+export async function currentHouseholdCalorieTarget(): Promise<number> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const { data: profile } = await supabase.from("profiles").select("household_id").eq("id", user.id).single();
+  if (!profile?.household_id) return 0;
+
+  const { data: householdProfiles } = await supabase
+    .from("profiles")
+    .select("daily_calorie_target")
+    .eq("household_id", profile.household_id);
+
+  return (householdProfiles ?? []).reduce((sum, p) => sum + (p.daily_calorie_target ?? 0), 0);
+}

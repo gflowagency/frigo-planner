@@ -17,6 +17,26 @@ export const ESTIMATE_NUTRIENTS_TOOL = {
   },
 };
 
+export const ESTIMATE_PORTION_TOOL = {
+  name: "estimate_portion_nutrients",
+  description:
+    "Estime les valeurs nutritionnelles TOTALES pour la portion décrite (pas pour 100 g — pour la quantité réellement mangée).",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      kcal: { type: "number" },
+      proteines: { type: "number", description: "grammes, total pour la portion" },
+      glucides: { type: "number", description: "grammes, total pour la portion" },
+      sucres: { type: "number", description: "grammes, total pour la portion" },
+      lipides: { type: "number", description: "grammes, total pour la portion" },
+      acides_gras_satures: { type: "number", description: "grammes, total pour la portion" },
+      fibres: { type: "number", description: "grammes, total pour la portion" },
+      sel: { type: "number", description: "grammes, total pour la portion" },
+    },
+    required: ["kcal", "proteines", "glucides", "sucres", "lipides", "acides_gras_satures", "fibres", "sel"],
+  },
+};
+
 export type EstimatedNutrients = {
   kcal: number;
   proteines: number;

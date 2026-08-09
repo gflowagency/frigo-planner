@@ -12,9 +12,11 @@ const NUTRIENT_LABELS: Record<string, string> = {
 export default function NutrientGrid({
   nutrients,
   estimated,
+  basisLabel = "pour 100 g",
 }: {
   nutrients: Record<string, number>;
   estimated?: boolean;
+  basisLabel?: string;
 }) {
   return (
     <div className="grid grid-cols-4 gap-2 rounded-xl bg-background p-3 text-center">
@@ -28,7 +30,8 @@ export default function NutrientGrid({
         </div>
       ))}
       <p className="col-span-4 -mt-1 text-[10px] text-muted-2">
-        pour 100 g{estimated ? " — estimation IA, à titre indicatif" : ""}
+        {basisLabel}
+        {estimated ? " — estimation IA, à titre indicatif" : ""}
       </p>
     </div>
   );

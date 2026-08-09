@@ -60,9 +60,11 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.from("nutrition_log").insert({
       household_id: profile.household_id,
       logged_by: user.id,
-      recipe_title: title,
+      food_name: title,
       calories_per_serving: caloriesPerServing,
       servings: servings ?? 1,
+      source: "recipe",
+      meal_slot: "soir",
     });
     if (error) console.error("nutrition_log insert failed:", error.message);
   }
