@@ -1,26 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-
-async function currentHouseholdAndUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("household_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.household_id) redirect("/onboarding");
-
-  return { supabase, userId: user.id, householdId: profile.household_id as string };
-}
+import { currentHouseholdAndUser } from "@/lib/household";
+import { trackFrequentItem } from "@/lib/frequent-items";
 
 export async function addPantryItem(formData: FormData) {
   const { supabase, userId, householdId } = await currentHouseholdAndUser();
@@ -30,6 +12,9 @@ export async function addPantryItem(formData: FormData) {
 
   const barcode = (formData.get("barcode") as string) || null;
   const quantity = Number(formData.get("quantity") ?? 1);
+  const brand = (formData.get("brand") as string) || null;
+  const category = (formData.get("category") as string) || "autre";
+  const unit = (formData.get("unit") as string) || "piece";
   const nutriscore = (formData.get("nutriscore") as string) || null;
   const nutrientsRaw = (formData.get("nutrients") as string) || null;
   const nutrients = nutrientsRaw ? JSON.parse(nutrientsRaw) : null;
@@ -54,6 +39,7 @@ export async function addPantryItem(formData: FormData) {
         .eq("id", existing.id);
       if (error) console.error("addPantryItem (top-up) failed:", error.message);
 
+      await trackFrequentItem(supabase, householdId, { barcode, name, brand, category, unit, quantity });
       revalidatePath("/dashboard");
       revalidatePath("/scan");
       return;
@@ -65,18 +51,72 @@ export async function addPantryItem(formData: FormData) {
     added_by: userId,
     barcode,
     name,
-    brand: (formData.get("brand") as string) || null,
-    category: (formData.get("category") as string) || "autre",
+    brand,
+    category,
     quantity,
-    unit: (formData.get("unit") as string) || "piece",
+    unit,
     image_url: (formData.get("imageUrl") as string) || null,
     nutriscore,
     nutrients,
   });
   if (error) console.error("addPantryItem (insert) failed:", error.message);
 
+  await trackFrequentItem(supabase, householdId, { barcode, name, brand, category, unit, quantity });
   revalidatePath("/dashboard");
   revalidatePath("/scan");
+}
+
+export async function quickAddFrequentItem(formData: FormData) {
+  const { supabase, userId, householdId } = await currentHouseholdAndUser();
+  const id = String(formData.get("id"));
+
+  const { data: freq } = await supabase.from("frequent_items").select("*").eq("id", id).single();
+  if (!freq) return;
+
+  if (freq.barcode) {
+    const { data: existing } = await supabase
+      .from("pantry_items")
+      .select("id, quantity")
+      .eq("household_id", householdId)
+      .eq("barcode", freq.barcode)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from("pantry_items")
+        .update({
+          quantity: Number(existing.quantity) + Number(freq.default_quantity),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+      if (error) console.error("quickAddFrequentItem (top-up) failed:", error.message);
+      await bumpFrequentItem(supabase, id);
+      revalidatePath("/dashboard");
+      return;
+    }
+  }
+
+  const { error } = await supabase.from("pantry_items").insert({
+    household_id: householdId,
+    added_by: userId,
+    barcode: freq.barcode,
+    name: freq.name,
+    brand: freq.brand,
+    category: freq.category ?? "autre",
+    quantity: freq.default_quantity,
+    unit: freq.unit,
+  });
+  if (error) console.error("quickAddFrequentItem (insert) failed:", error.message);
+  await bumpFrequentItem(supabase, id);
+  revalidatePath("/dashboard");
+}
+
+async function bumpFrequentItem(supabase: Awaited<ReturnType<typeof currentHouseholdAndUser>>["supabase"], id: string) {
+  const { data: current } = await supabase.from("frequent_items").select("times_added").eq("id", id).single();
+  await supabase
+    .from("frequent_items")
+    .update({ times_added: (current?.times_added ?? 0) + 1, last_added_at: new Date().toISOString() })
+    .eq("id", id);
 }
 
 export async function deletePantryItem(formData: FormData) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import OfflineBanner from "./OfflineBanner";
 
 const NAV_ITEMS = [
   {
@@ -41,6 +42,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: "/shopping",
+    label: "Courses",
+    icon: (active: boolean) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="20" r="1.4" />
+        <circle cx="17" cy="20" r="1.4" />
+        <path d="M2.5 3h2.4l2.2 11.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L20.5 7H6" />
+      </svg>
+    ),
+  },
+  {
     href: "/settings",
     label: "Profil",
     icon: (active: boolean) => (
@@ -57,7 +69,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
-      <header className="pt-safe sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur">
+      <div className="pt-safe sticky top-0 z-40">
+        <OfflineBanner />
+      </div>
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-sm font-semibold text-accent-foreground">

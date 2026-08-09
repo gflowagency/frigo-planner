@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { addPantryItem } from "../pantry-actions";
 import { PANTRY_CATEGORIES } from "@/lib/categories";
+import { enqueuePantryItem, flushPantryQueue, readQueue } from "@/lib/pantry-queue";
 import NutriscoreBadge from "./NutriscoreBadge";
 import NutrientGrid from "./NutrientGrid";
 
@@ -24,11 +25,29 @@ const fieldClass =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
 
 export default function BarcodeScanner() {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LookupResult | null>(null);
   const [loadingLookup, setLoadingLookup] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [queuedCount, setQueuedCount] = useState(0);
+
+  useEffect(() => {
+    setQueuedCount(readQueue().length);
+    async function tryFlush() {
+      const flushed = await flushPantryQueue();
+      if (flushed > 0) {
+        setQueuedCount(readQueue().length);
+        router.refresh();
+      }
+    }
+    void tryFlush();
+    window.addEventListener("online", tryFlush);
+    return () => window.removeEventListener("online", tryFlush);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!scanning) return;
@@ -76,7 +95,14 @@ export default function BarcodeScanner() {
       const data: LookupResult = await res.json();
       setResult(data);
     } catch {
-      setError("La recherche du produit a échoué. Réessaie ou ajoute-le manuellement.");
+      // Offline (or OFF unreachable): let the user fill the form manually,
+      // the add itself will be queued below rather than lost.
+      setResult({ found: false, barcode: code });
+      setError(
+        navigator.onLine
+          ? "La recherche du produit a échoué. Complète les infos manuellement."
+          : "Hors ligne : complète les infos, l'article sera ajouté à la reconnexion.",
+      );
     } finally {
       setLoadingLookup(false);
     }
@@ -88,8 +114,49 @@ export default function BarcodeScanner() {
     setScanning(true);
   }
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const payload = {
+      barcode: result?.barcode ?? null,
+      name: String(formData.get("name") ?? "").trim(),
+      brand: (formData.get("brand") as string) || null,
+      category: (formData.get("category") as string) || "autre",
+      quantity: Number(formData.get("quantity") ?? 1),
+      unit: (formData.get("unit") as string) || "piece",
+      imageUrl: result?.imageUrl ?? null,
+      nutriscore: result?.nutriscore ?? null,
+      nutrients: result?.nutrients ?? null,
+    };
+    if (!payload.name) return;
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/pantry-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error();
+      router.refresh();
+    } catch {
+      enqueuePantryItem(payload);
+      setQueuedCount(readQueue().length);
+    } finally {
+      setSubmitting(false);
+      reset();
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
+      {queuedCount > 0 && (
+        <p className="rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent-hover">
+          {queuedCount} article{queuedCount > 1 ? "s" : ""} en attente de connexion — sera{queuedCount > 1 ? "ont" : ""}{" "}
+          ajouté{queuedCount > 1 ? "s" : ""} au stock automatiquement.
+        </p>
+      )}
+
       {!scanning && !result && (
         <button
           onClick={() => setScanning(true)}
@@ -136,13 +203,7 @@ export default function BarcodeScanner() {
       )}
 
       {result && (
-        <form
-          action={async (formData) => {
-            await addPantryItem(formData);
-            reset();
-          }}
-          className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
-        >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-center gap-3">
             {result.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -169,11 +230,6 @@ export default function BarcodeScanner() {
           </div>
 
           {result.nutrients && <NutrientGrid nutrients={result.nutrients} />}
-
-          <input type="hidden" name="barcode" value={result.barcode ?? ""} />
-          <input type="hidden" name="imageUrl" value={result.imageUrl ?? ""} />
-          <input type="hidden" name="nutriscore" value={result.nutriscore ?? ""} />
-          <input type="hidden" name="nutrients" value={result.nutrients ? JSON.stringify(result.nutrients) : ""} />
 
           <input
             name="name"
@@ -214,9 +270,10 @@ export default function BarcodeScanner() {
           <div className="flex gap-2">
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98]"
+              disabled={submitting}
+              className="flex-1 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
             >
-              Ajouter au stock
+              {submitting ? "Ajout…" : "Ajouter au stock"}
             </button>
             <button
               type="button"

@@ -20,7 +20,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "no household" }, { status: 400 });
   }
 
-  const { ingredients } = (await request.json()) as { ingredients: IngredientInput[] };
+  const { ingredients, title, caloriesPerServing, servings } = (await request.json()) as {
+    ingredients: IngredientInput[];
+    title?: string;
+    caloriesPerServing?: number;
+    servings?: number;
+  };
 
   const { data: pantryItems } = await supabase
     .from("pantry_items")
@@ -49,6 +54,17 @@ export async function POST(request: NextRequest) {
     deducted.push({ ingredient: ingredient.name, matched: match.name });
     // Prevent matching the same stock row twice within one recipe.
     pantryItems!.splice(pantryItems!.indexOf(match), 1);
+  }
+
+  if (title && caloriesPerServing) {
+    const { error } = await supabase.from("nutrition_log").insert({
+      household_id: profile.household_id,
+      logged_by: user.id,
+      recipe_title: title,
+      calories_per_serving: caloriesPerServing,
+      servings: servings ?? 1,
+    });
+    if (error) console.error("nutrition_log insert failed:", error.message);
   }
 
   return NextResponse.json({ deducted, notFound });

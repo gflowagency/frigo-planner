@@ -176,3 +176,107 @@ grant execute on function my_household_id() to authenticated;
 grant execute on function join_household(text) to authenticated;
 grant execute on function create_household() to authenticated;
 
+-- Shopping list: manual entries + missing ingredients pushed from recipes.
+create table if not exists shopping_items (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  name text not null,
+  quantity text,
+  checked boolean not null default false,
+  added_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists shopping_items_household_idx on shopping_items(household_id);
+
+-- Saved recipes, kept independently of whatever the AI last generated.
+create table if not exists favorite_recipes (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  added_by uuid references profiles(id) on delete set null,
+  title text not null,
+  description text,
+  servings numeric not null default 1,
+  estimated_calories_per_serving numeric,
+  ingredients jsonb not null default '[]',
+  instructions jsonb not null default '[]',
+  created_at timestamptz not null default now()
+);
+create index if not exists favorite_recipes_household_idx on favorite_recipes(household_id);
+
+-- Tracks how often each product gets added, to power one-tap "quick add".
+-- Deliberately no unique constraint: lookups/upserts are done in application
+-- code (same top-up-by-barcode pattern as pantry_items) since a partial
+-- unique index (barcode set vs. null) can't be targeted by a plain upsert.
+create table if not exists frequent_items (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  barcode text,
+  name text not null,
+  brand text,
+  category text,
+  unit text not null default 'piece',
+  default_quantity numeric not null default 1,
+  times_added integer not null default 1,
+  last_added_at timestamptz not null default now()
+);
+create index if not exists frequent_items_household_idx on frequent_items(household_id, times_added desc);
+
+-- One row per "recette marquée préparée", household-level (not per-member —
+-- this is a couple's shared stock/goals app, not a per-person food diary).
+create table if not exists nutrition_log (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  logged_by uuid references profiles(id) on delete set null,
+  recipe_title text not null,
+  calories_per_serving numeric not null default 0,
+  servings numeric not null default 1,
+  consumed_at date not null default current_date,
+  created_at timestamptz not null default now()
+);
+create index if not exists nutrition_log_household_idx on nutrition_log(household_id, consumed_at);
+
+-- Weekly meal plan: one optional recipe per day/slot, sourced from favorites.
+create table if not exists meal_plan (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  plan_date date not null,
+  meal_slot text not null check (meal_slot in ('dejeuner', 'diner')),
+  title text not null,
+  servings numeric not null default 1,
+  estimated_calories_per_serving numeric,
+  ingredients jsonb not null default '[]',
+  instructions jsonb not null default '[]',
+  favorite_recipe_id uuid references favorite_recipes(id) on delete set null,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique (household_id, plan_date, meal_slot)
+);
+create index if not exists meal_plan_household_idx on meal_plan(household_id, plan_date);
+
+alter table shopping_items enable row level security;
+alter table favorite_recipes enable row level security;
+alter table frequent_items enable row level security;
+alter table nutrition_log enable row level security;
+alter table meal_plan enable row level security;
+
+create policy "select household shopping" on shopping_items for select to authenticated using (household_id = my_household_id());
+create policy "insert household shopping" on shopping_items for insert to authenticated with check (household_id = my_household_id());
+create policy "update household shopping" on shopping_items for update to authenticated using (household_id = my_household_id());
+create policy "delete household shopping" on shopping_items for delete to authenticated using (household_id = my_household_id());
+
+create policy "select household favorites" on favorite_recipes for select to authenticated using (household_id = my_household_id());
+create policy "insert household favorites" on favorite_recipes for insert to authenticated with check (household_id = my_household_id());
+create policy "delete household favorites" on favorite_recipes for delete to authenticated using (household_id = my_household_id());
+
+create policy "select household frequent items" on frequent_items for select to authenticated using (household_id = my_household_id());
+create policy "insert household frequent items" on frequent_items for insert to authenticated with check (household_id = my_household_id());
+create policy "update household frequent items" on frequent_items for update to authenticated using (household_id = my_household_id());
+
+create policy "select household nutrition log" on nutrition_log for select to authenticated using (household_id = my_household_id());
+create policy "insert household nutrition log" on nutrition_log for insert to authenticated with check (household_id = my_household_id());
+
+create policy "select household meal plan" on meal_plan for select to authenticated using (household_id = my_household_id());
+create policy "insert household meal plan" on meal_plan for insert to authenticated with check (household_id = my_household_id());
+create policy "update household meal plan" on meal_plan for update to authenticated using (household_id = my_household_id());
+create policy "delete household meal plan" on meal_plan for delete to authenticated using (household_id = my_household_id());
+

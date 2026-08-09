@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addPantryItem } from "../pantry-actions";
 import { PANTRY_CATEGORIES } from "@/lib/categories";
 import PantryList from "./PantryList";
+import QuickAdd from "./QuickAdd";
 
 const fieldClass =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
@@ -16,6 +17,12 @@ export default async function DashboardPage() {
     .order("name", { ascending: true });
 
   const count = items?.length ?? 0;
+
+  const { data: frequentItems } = await supabase
+    .from("frequent_items")
+    .select("id, name, category")
+    .order("times_added", { ascending: false })
+    .limit(8);
 
   return (
     <div className="flex flex-col gap-7">
@@ -33,6 +40,8 @@ export default async function DashboardPage() {
           Scanner un produit
         </Link>
       </div>
+
+      <QuickAdd items={frequentItems ?? []} />
 
       <details className="group rounded-2xl border border-border bg-surface open:pb-4">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5 text-sm font-medium text-foreground">

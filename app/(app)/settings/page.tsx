@@ -41,6 +41,34 @@ export default async function SettingsPage({
     inviteCode = h?.invite_code ?? null;
   }
 
+  const { data: householdProfiles } = await supabase
+    .from("profiles")
+    .select("daily_calorie_target")
+    .eq("household_id", profile.household_id);
+  const targetTotal = (householdProfiles ?? []).reduce((sum, p) => sum + (p.daily_calorie_target ?? 0), 0);
+
+  const since = new Date();
+  since.setDate(since.getDate() - 6);
+  const { data: logs } = await supabase
+    .from("nutrition_log")
+    .select("consumed_at, calories_per_serving, servings")
+    .gte("consumed_at", since.toISOString().slice(0, 10));
+
+  const byDate = new Map<string, number>();
+  for (const log of logs ?? []) {
+    const kcal = Number(log.calories_per_serving) * Number(log.servings);
+    byDate.set(log.consumed_at, (byDate.get(log.consumed_at) ?? 0) + kcal);
+  }
+  const dayFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
+  const history = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(since);
+    d.setDate(since.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    const total = Math.round(byDate.get(key) ?? 0);
+    return { date: key, label: dayFmt.format(d).replace(".", ""), total };
+  });
+  const maxTotal = Math.max(targetTotal, ...history.map((d) => d.total), 1);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -67,6 +95,32 @@ export default async function SettingsPage({
           <CopyCode code={inviteCode} />
         </div>
       )}
+
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">Historique nutritionnel</h2>
+        <p className="mb-4 text-xs text-muted-2">
+          Calories des recettes marquées &laquo;&nbsp;préparée&nbsp;&raquo; sur 7 jours
+          {targetTotal > 0 ? ` — objectif du foyer ~${Math.round(targetTotal)} kcal/j` : ""}.
+        </p>
+        <div className="flex items-end gap-2">
+          {history.map((day) => {
+            const pct = Math.max(day.total > 0 ? 6 : 0, Math.round((day.total / maxTotal) * 100));
+            const over = targetTotal > 0 && day.total > targetTotal;
+            return (
+              <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
+                <div className="flex h-20 w-full items-end overflow-hidden rounded-md bg-background">
+                  <div
+                    className={`w-full rounded-md transition-all ${over ? "bg-danger" : "bg-accent"}`}
+                    style={{ height: `${pct}%` }}
+                  />
+                </div>
+                <span className="text-[10px] capitalize text-muted-2">{day.label}</span>
+                <span className="text-[10px] font-medium tabular-nums text-foreground">{day.total || "–"}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <form action={updateProfile} className="flex flex-col gap-5 rounded-2xl border border-border bg-surface p-4 sm:p-6">
         <div>
