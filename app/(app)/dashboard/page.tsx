@@ -1,13 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { addPantryItem } from "../pantry-actions";
-import { PANTRY_CATEGORIES } from "@/lib/categories";
 import PantryList from "./PantryList";
 import QuickAdd from "./QuickAdd";
 import BackfillNutrientsButton from "./BackfillNutrientsButton";
-
-const fieldClass =
-  "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
+import ManualAddForm from "./ManualAddForm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -68,31 +64,7 @@ export default async function DashboardPage() {
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </summary>
-        <form action={addPantryItem} className="grid grid-cols-2 gap-3 px-4 sm:grid-cols-4">
-          <input name="name" required placeholder="Nom" className={`col-span-2 ${fieldClass} sm:col-span-1`} />
-          <select name="category" className={fieldClass} defaultValue="autre">
-            {PANTRY_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.emoji} {c.label}
-              </option>
-            ))}
-          </select>
-          <input
-            name="quantity"
-            type="number"
-            min={1}
-            step="0.1"
-            defaultValue={1}
-            className={fieldClass}
-          />
-          <input name="unit" placeholder="unité (pièce, kg, g, l...)" className={fieldClass} />
-          <button
-            type="submit"
-            className="col-span-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] sm:col-span-4"
-          >
-            Ajouter au stock
-          </button>
-        </form>
+        <ManualAddForm />
       </details>
 
       {count === 0 ? (
