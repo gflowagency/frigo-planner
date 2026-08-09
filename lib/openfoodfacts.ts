@@ -39,6 +39,20 @@ function parseQuantity(raw: string | undefined): { quantity: number; unit: strin
   return { quantity: Number(single[1]), unit };
 }
 
+/**
+ * Fallback unit when OpenFoodFacts' "quantity" field doesn't parse to a
+ * number (common for loose/bulk products). Defaulting everything to
+ * "piece" was wrong for most groceries — guess from the product's own
+ * category/name instead, and only actually fall back to "piece" for
+ * genuinely unit-counted goods like eggs.
+ */
+function guessUnit(categoriesTags: string[] | undefined, productName: string | undefined): string {
+  const joined = [...(categoriesTags ?? []), productName ?? ""].join(" ").toLowerCase();
+  if (/\boeufs?\b|\begg/.test(joined)) return "piece";
+  if (/boisson|beverage|drink|soda|\bjus\b|juice|\beau\b|\bwater\b|limonade|\blait\b|\bmilk\b/.test(joined)) return "l";
+  return "g";
+}
+
 function pickNutrients(nutriments: Record<string, number> | undefined) {
   if (!nutriments) return null;
   const keys: Record<string, string> = {
@@ -96,7 +110,7 @@ export async function lookupProduct(code: string): Promise<OffProduct> {
     imageUrl: product.image_front_small_url || product.image_url || null,
     category: guessCategory(product.categories_tags),
     quantity: parsedQuantity?.quantity ?? null,
-    unit: parsedQuantity?.unit ?? null,
+    unit: parsedQuantity?.unit ?? guessUnit(product.categories_tags, product.product_name_fr || product.product_name),
     nutriscore: product.nutriscore_grade && product.nutriscore_grade !== "unknown" ? product.nutriscore_grade : null,
     nutrients: pickNutrients(product.nutriments),
   };

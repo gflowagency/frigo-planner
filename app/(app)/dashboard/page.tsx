@@ -85,7 +85,7 @@ export default async function DashboardPage() {
             defaultValue={1}
             className={fieldClass}
           />
-          <input name="unit" placeholder="unité (pièce, kg...)" defaultValue="piece" className={fieldClass} />
+          <input name="unit" placeholder="unité (pièce, kg, g, l...)" className={fieldClass} />
           <button
             type="submit"
             className="col-span-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] sm:col-span-4"
