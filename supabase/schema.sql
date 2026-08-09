@@ -199,6 +199,9 @@ create table if not exists favorite_recipes (
   estimated_calories_per_serving numeric,
   ingredients jsonb not null default '[]',
   instructions jsonb not null default '[]',
+  -- What the last "marquer comme préparée" took out of stock, so deleting
+  -- the recipe afterwards (e.g. it turned out to be a mistake) can restore it.
+  last_deduction jsonb,
   created_at timestamptz not null default now()
 );
 create index if not exists favorite_recipes_household_idx on favorite_recipes(household_id);
@@ -266,6 +269,7 @@ create policy "delete household shopping" on shopping_items for delete to authen
 
 create policy "select household favorites" on favorite_recipes for select to authenticated using (household_id = my_household_id());
 create policy "insert household favorites" on favorite_recipes for insert to authenticated with check (household_id = my_household_id());
+create policy "update household favorites" on favorite_recipes for update to authenticated using (household_id = my_household_id()) with check (household_id = my_household_id());
 create policy "delete household favorites" on favorite_recipes for delete to authenticated using (household_id = my_household_id());
 
 create policy "select household frequent items" on frequent_items for select to authenticated using (household_id = my_household_id());

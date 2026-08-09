@@ -31,6 +31,7 @@ export default function FavoritesList({ favorites }: { favorites: Favorite[] }) 
           title: fav.title,
           caloriesPerServing: fav.estimated_calories_per_serving,
           servings: fav.servings,
+          recipeId: fav.id,
         }),
       });
       if (!res.ok) throw new Error();
