@@ -10,6 +10,7 @@ import NutrientGrid from "./NutrientGrid";
 
 type LookupResult = {
   found: boolean;
+  source?: "off" | "upcitemdb" | "none";
   barcode?: string;
   name?: string;
   brand?: string | null;
@@ -223,7 +224,12 @@ export default function BarcodeScanner() {
               {result.brand && <p className="text-xs text-muted-2">{result.brand}</p>}
               {!result.found && (
                 <p className="text-xs text-muted-2">
-                  Ce code-barres n&apos;est pas dans OpenFoodFacts, complète les infos.
+                  Ce code-barres est introuvable, complète les infos manuellement.
+                </p>
+              )}
+              {result.found && result.source === "upcitemdb" && (
+                <p className="text-xs text-muted-2">
+                  Trouvé via une base de secours — pas de données nutritionnelles disponibles.
                 </p>
               )}
             </div>

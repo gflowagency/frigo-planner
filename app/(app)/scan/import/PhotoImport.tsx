@@ -10,6 +10,7 @@ import NutriscoreBadge from "../NutriscoreBadge";
 type ImportItem = {
   barcode: string;
   found: boolean;
+  source?: "off" | "upcitemdb" | "none";
   name: string;
   brand: string | null;
   imageUrl: string | null;
@@ -65,6 +66,7 @@ export default function PhotoImport() {
           return {
             barcode,
             found: !!data.found,
+            source: data.source,
             name: data.name ?? "Produit inconnu",
             brand: data.brand ?? null,
             imageUrl: data.imageUrl ?? null,
@@ -222,7 +224,10 @@ export default function PhotoImport() {
                       />
                       {item.nutriscore && <NutriscoreBadge grade={item.nutriscore} />}
                     </div>
-                    {!item.found && <p className="px-1 text-xs text-muted-2">Non trouvé sur OpenFoodFacts</p>}
+                    {!item.found && <p className="px-1 text-xs text-muted-2">Non trouvé, complète les infos</p>}
+                    {item.found && item.source === "upcitemdb" && (
+                      <p className="px-1 text-xs text-muted-2">Base de secours — sans nutriments</p>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pl-8">

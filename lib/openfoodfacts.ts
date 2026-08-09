@@ -74,6 +74,7 @@ function pickNutrients(nutriments: Record<string, number> | undefined) {
 
 export type OffProduct = {
   found: boolean;
+  source: "off" | "upcitemdb" | "none";
   barcode: string;
   name?: string;
   brand?: string | null;
@@ -85,33 +86,81 @@ export type OffProduct = {
   nutrients?: Record<string, number> | null;
 };
 
+/**
+ * Generic (not food-specific) barcode database used as a last resort when
+ * OpenFoodFacts has no record — mainly non-French or very new products.
+ * Free "trial" endpoint, no API key, ~100 req/day: best-effort only, and it
+ * never has nutrition data, so this is purely a name/brand/image rescue.
+ */
+async function lookupUpcItemDb(code: string): Promise<{ name: string; brand: string | null; imageUrl: string | null; category: string | null } | null> {
+  try {
+    const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(code)}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const item = data?.items?.[0];
+    if (!item?.title) return null;
+
+    return {
+      name: String(item.title),
+      brand: item.brand ? String(item.brand) : null,
+      imageUrl: Array.isArray(item.images) && item.images[0] ? String(item.images[0]) : null,
+      category: item.category ? String(item.category) : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function lookupProduct(code: string): Promise<OffProduct> {
   const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`, {
     headers: { "User-Agent": "FrigoPlanner/1.0 (Vercel app)" },
   });
 
-  if (!res.ok) return { found: false, barcode: code };
+  if (res.ok) {
+    const data = await res.json();
+    if (data.status === 1 && data.product) {
+      const product = data.product;
+      const parsedQuantity =
+        parseQuantity(product.quantity) ??
+        (product.product_quantity && product.product_quantity_unit
+          ? { quantity: Number(product.product_quantity), unit: String(product.product_quantity_unit).toLowerCase() }
+          : null);
 
-  const data = await res.json();
-  if (data.status !== 1 || !data.product) return { found: false, barcode: code };
+      return {
+        found: true,
+        source: "off",
+        barcode: code,
+        name: product.product_name_fr || product.product_name || "Produit sans nom",
+        brand: product.brands || null,
+        imageUrl: product.image_front_small_url || product.image_url || null,
+        category: guessCategory(product.categories_tags),
+        quantity: parsedQuantity?.quantity ?? null,
+        unit: parsedQuantity?.unit ?? guessUnit(product.categories_tags, product.product_name_fr || product.product_name),
+        nutriscore: product.nutriscore_grade && product.nutriscore_grade !== "unknown" ? product.nutriscore_grade : null,
+        nutrients: pickNutrients(product.nutriments),
+      };
+    }
+  }
 
-  const product = data.product;
-  const parsedQuantity =
-    parseQuantity(product.quantity) ??
-    (product.product_quantity && product.product_quantity_unit
-      ? { quantity: Number(product.product_quantity), unit: String(product.product_quantity_unit).toLowerCase() }
-      : null);
+  const fallback = await lookupUpcItemDb(code);
+  if (fallback) {
+    return {
+      found: true,
+      source: "upcitemdb",
+      barcode: code,
+      name: fallback.name,
+      brand: fallback.brand,
+      imageUrl: fallback.imageUrl,
+      category: guessCategory(fallback.category ? [fallback.category] : undefined),
+      quantity: null,
+      unit: guessUnit(undefined, fallback.name),
+      nutriscore: null,
+      nutrients: null,
+    };
+  }
 
-  return {
-    found: true,
-    barcode: code,
-    name: product.product_name_fr || product.product_name || "Produit sans nom",
-    brand: product.brands || null,
-    imageUrl: product.image_front_small_url || product.image_url || null,
-    category: guessCategory(product.categories_tags),
-    quantity: parsedQuantity?.quantity ?? null,
-    unit: parsedQuantity?.unit ?? guessUnit(product.categories_tags, product.product_name_fr || product.product_name),
-    nutriscore: product.nutriscore_grade && product.nutriscore_grade !== "unknown" ? product.nutriscore_grade : null,
-    nutrients: pickNutrients(product.nutriments),
-  };
+  return { found: false, source: "none", barcode: code };
 }
