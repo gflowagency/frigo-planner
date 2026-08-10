@@ -10,12 +10,16 @@ type RecipeLike = {
 export default function RecipeCard({
   recipe,
   children,
+  className = "",
+  style,
 }: {
   recipe: RecipeLike;
   children?: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <article className="rounded-2xl border border-border bg-surface p-5">
+    <article className={`rounded-2xl border border-border bg-surface p-5 ${className}`} style={style}>
       <div className="mb-2 flex items-start justify-between gap-3">
         <h3 className="text-[17px] font-semibold tracking-tight text-foreground">{recipe.title}</h3>
         {recipe.estimated_calories_per_serving != null && (

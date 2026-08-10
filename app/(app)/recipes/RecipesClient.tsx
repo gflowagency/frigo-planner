@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ProposedRecipe } from "@/lib/recipe-tool";
 import RecipeCard from "./RecipeCard";
 import { saveFavoriteRecipe } from "./favorites-actions";
@@ -28,6 +28,11 @@ export default function RecipesClient() {
   const [consumedSummary, setConsumedSummary] = useState<Record<number, string>>({});
   const [savedIdx, setSavedIdx] = useState<Record<number, boolean>>({});
   const [shoppingAddedIdx, setShoppingAddedIdx] = useState<Record<number, boolean>>({});
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [chatMessages, chatLoading]);
 
   async function generate() {
     setLoading(true);
@@ -169,7 +174,11 @@ export default function RecipesClient() {
       {loading && (
         <div className="flex flex-col gap-4">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-2xl border border-border bg-surface p-5">
+            <div
+              key={i}
+              className="animate-skeleton-in rounded-2xl border border-border bg-surface p-5"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
               <div className="mb-3 h-4 w-2/5 rounded-full bg-accent-soft" />
               <div className="mb-2 h-3 w-full rounded-full bg-border" />
               <div className="mb-5 h-3 w-3/4 rounded-full bg-border" />
@@ -203,7 +212,7 @@ export default function RecipesClient() {
       {!loading && recipes && (
         <div className="flex flex-col gap-4">
           {recipes.map((recipe, idx) => (
-            <RecipeCard key={idx} recipe={recipe}>
+            <RecipeCard key={idx} recipe={recipe} className="animate-fade-in-up" style={{ animationDelay: `${idx * 60}ms` }}>
               {consumedSummary[idx] ? (
                 <p className="rounded-xl bg-success-soft px-3 py-2.5 text-xs text-success">
                   ✓ Recette préparée. {consumedSummary[idx]}
@@ -240,16 +249,30 @@ export default function RecipesClient() {
         <div className="rounded-2xl border border-border bg-surface p-4">
           <h3 className="mb-3 text-sm font-semibold text-foreground">Ajuster les recettes</h3>
           {chatMessages.length > 0 && (
-            <div className="mb-3 flex flex-col gap-2">
+            <div className="mb-3 flex max-h-72 flex-col gap-2 overflow-y-auto rounded-xl bg-background p-3">
               {chatMessages.map((m, i) => (
-                <p
-                  key={i}
-                  className={`text-sm ${m.role === "user" ? "text-foreground" : "text-muted"}`}
-                >
-                  <span className="font-medium">{m.role === "user" ? "Vous : " : "Assistant : "}</span>
-                  {m.content}
-                </p>
+                <div key={i} className={`animate-fade-in-up flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <p
+                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                      m.role === "user"
+                        ? "rounded-br-md bg-accent text-accent-foreground"
+                        : "rounded-bl-md bg-surface text-foreground"
+                    }`}
+                  >
+                    {m.content}
+                  </p>
+                </div>
               ))}
+              {chatLoading && (
+                <div className="animate-fade-in-up flex justify-start">
+                  <span className="flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-surface px-4 py-3">
+                    <span className="h-1.5 w-1.5 animate-bounce-dot rounded-full bg-muted-2" style={{ animationDelay: "0ms" }} />
+                    <span className="h-1.5 w-1.5 animate-bounce-dot rounded-full bg-muted-2" style={{ animationDelay: "150ms" }} />
+                    <span className="h-1.5 w-1.5 animate-bounce-dot rounded-full bg-muted-2" style={{ animationDelay: "300ms" }} />
+                  </span>
+                </div>
+              )}
+              <div ref={chatBottomRef} />
             </div>
           )}
           <div className="flex gap-2">
@@ -262,10 +285,13 @@ export default function RecipesClient() {
             />
             <button
               onClick={sendChat}
-              disabled={chatLoading}
+              disabled={chatLoading || !chatInput.trim()}
               className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
             >
-              {chatLoading ? "…" : "Envoyer"}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
             </button>
           </div>
         </div>

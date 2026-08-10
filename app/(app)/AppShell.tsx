@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import OfflineBanner from "./OfflineBanner";
 
 const NAV_ITEMS = [
@@ -66,16 +67,28 @@ const NAV_ITEMS = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       <div className="pt-safe sticky top-0 z-40">
         <OfflineBanner />
       </div>
-      <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur">
+      <header
+        className={`sticky top-0 z-30 border-b bg-surface/90 backdrop-blur transition-shadow duration-200 ${
+          scrolled ? "border-border shadow-[0_1px_12px_-4px_rgba(36,30,24,0.12)]" : "border-transparent"
+        }`}
+      >
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-sm font-semibold text-accent-foreground">
+          <Link href="/dashboard" className="group flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-sm font-semibold text-accent-foreground transition-transform duration-200 group-hover:scale-110 group-active:scale-95">
               F
             </span>
             <span className="text-[15px] font-semibold tracking-tight text-foreground">Frigo Planner</span>
@@ -88,7 +101,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95 ${
                     active ? "bg-accent-soft text-accent-hover" : "text-muted hover:bg-accent-soft/60 hover:text-foreground"
                   }`}
                 >
@@ -110,12 +123,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors active:scale-90 ${
                   active ? "text-accent" : "text-muted-2"
                 }`}
               >
-                {item.icon(!!active)}
+                <span
+                  className={`transition-transform duration-200 ${active ? "scale-110" : "scale-100"}`}
+                >
+                  {item.icon(!!active)}
+                </span>
                 {item.label}
+                <span
+                  className={`h-1 w-1 rounded-full bg-accent transition-all duration-200 ${
+                    active ? "scale-100 opacity-100" : "scale-0 opacity-0"
+                  }`}
+                />
               </Link>
             );
           })}

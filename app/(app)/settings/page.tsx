@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/logout/actions";
 import { updateProfile } from "./actions";
 import CopyCode from "./CopyCode";
+import SubmitButton from "@/app/components/SubmitButton";
 
 const fieldClass =
   "w-full rounded-xl border border-border bg-surface px-4 py-3 text-[15px] text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
@@ -186,21 +187,15 @@ export default async function SettingsPage({
           </p>
         </div>
 
-        <button
-          type="submit"
-          className="mt-1 w-full rounded-xl bg-accent px-4 py-3 text-[15px] font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98]"
-        >
+        <SubmitButton pendingText="Enregistrement…" className="mt-1 w-full">
           Enregistrer
-        </button>
+        </SubmitButton>
       </form>
 
       <form action={logout}>
-        <button
-          type="submit"
-          className="w-full rounded-xl border border-border px-4 py-3 text-[15px] font-medium text-danger transition-colors hover:bg-danger-soft"
-        >
+        <SubmitButton variant="danger" pendingText="Déconnexion…" className="w-full">
           Se déconnecter
-        </button>
+        </SubmitButton>
       </form>
     </div>
   );

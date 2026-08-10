@@ -127,7 +127,7 @@ export default function PlanningClient({ days, favorites }: { days: DayCol[]; fa
             </div>
           </div>
           {weekPlan.map((recipe, i) => (
-            <div key={i}>
+            <div key={i} className="animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-2">
                 {days[i]?.label ?? `Jour ${i + 1}`}
               </p>
@@ -150,8 +150,12 @@ export default function PlanningClient({ days, favorites }: { days: DayCol[]; fa
 
       {!weekPlan && (favorites.length > 0 || days.some((d) => d.dejeuner || d.diner)) && (
         <div className="flex flex-col gap-3">
-          {days.map((day) => (
-            <div key={day.date} className="rounded-2xl border border-border bg-surface p-4">
+          {days.map((day, i) => (
+            <div
+              key={day.date}
+              className="animate-fade-in-up rounded-2xl border border-border bg-surface p-4"
+              style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+            >
               <p className="mb-3 text-sm font-semibold text-foreground">{day.label}</p>
               <div className="grid grid-cols-2 gap-3">
                 {SLOTS.map((slot) => {

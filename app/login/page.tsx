@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { login } from "./actions";
+import SubmitButton from "@/app/components/SubmitButton";
 
 export default async function LoginPage({
   searchParams,
@@ -47,12 +48,9 @@ export default async function LoginPage({
             autoComplete="current-password"
             className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-[15px] text-foreground placeholder:text-muted-2 transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15"
           />
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-xl bg-accent px-4 py-3 text-[15px] font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98]"
-          >
+          <SubmitButton pendingText="Connexion…" className="mt-2 w-full">
             Se connecter
-          </button>
+          </SubmitButton>
         </form>
 
         <p className="mt-8 text-center text-[15px] text-muted">

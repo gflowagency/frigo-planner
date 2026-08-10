@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { completeOnboarding } from "./actions";
+import SubmitButton from "@/app/components/SubmitButton";
 
 const fieldClass =
   "w-full rounded-xl border border-border bg-surface px-4 py-3 text-[15px] text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15";
@@ -128,12 +129,9 @@ export default async function OnboardingPage({
             </select>
           </div>
 
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-xl bg-accent px-4 py-3 text-[15px] font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98]"
-          >
+          <SubmitButton pendingText="Enregistrement…" className="mt-2 w-full">
             Continuer
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </main>

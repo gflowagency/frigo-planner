@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { adjustPantryQuantity, deletePantryItem } from "../pantry-actions";
 import { categoryLabel, categoryEmoji } from "@/lib/categories";
 import NutriscoreBadge from "../scan/NutriscoreBadge";
@@ -21,17 +21,45 @@ type PantryItem = {
   nutrients_estimated: boolean;
 };
 
+type OptimisticAction = { type: "adjust"; id: string; delta: number } | { type: "delete"; id: string };
+
 export default function PantryList({ items }: { items: PantryItem[] }) {
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [optimisticItems, applyOptimistic] = useOptimistic(items, (state, action: OptimisticAction) => {
+    if (action.type === "delete") return state.filter((i) => i.id !== action.id);
+    return state
+      .map((i) => (i.id === action.id ? { ...i, quantity: Math.max(0, i.quantity + action.delta) } : i))
+      .filter((i) => i.quantity > 0);
+  });
+
+  function adjust(id: string, delta: number) {
+    startTransition(async () => {
+      applyOptimistic({ type: "adjust", id, delta });
+      const fd = new FormData();
+      fd.set("id", id);
+      fd.set("delta", String(delta));
+      await adjustPantryQuantity(fd);
+    });
+  }
+
+  function remove(id: string) {
+    startTransition(async () => {
+      applyOptimistic({ type: "delete", id });
+      const fd = new FormData();
+      fd.set("id", id);
+      await deletePantryItem(fd);
+    });
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
+    if (!q) return optimisticItems;
+    return optimisticItems.filter(
       (item) => item.name.toLowerCase().includes(q) || item.brand?.toLowerCase().includes(q),
     );
-  }, [items, query]);
+  }, [optimisticItems, query]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, PantryItem[]>();
@@ -43,8 +71,10 @@ export default function PantryList({ items }: { items: PantryItem[] }) {
     return map;
   }, [filtered]);
 
+  let rowIndex = 0;
+
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-7" aria-busy={isPending}>
       {items.length > 0 && (
         <div className="relative">
           <svg
@@ -83,8 +113,14 @@ export default function PantryList({ items }: { items: PantryItem[] }) {
             {categoryLabel(category)}
           </h2>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
-            {categoryItems.map((item) => (
-              <li key={item.id} className="px-4 py-3.5">
+            {categoryItems.map((item) => {
+              const delay = Math.min(rowIndex++, 8) * 30;
+              return (
+              <li
+                key={item.id}
+                className="animate-fade-in-up px-4 py-3.5"
+                style={{ animationDelay: `${delay}ms` }}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     {item.nutriscore && <NutriscoreBadge grade={item.nutriscore} />}
@@ -113,53 +149,46 @@ export default function PantryList({ items }: { items: PantryItem[] }) {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <form action={adjustPantryQuantity}>
-                      <input type="hidden" name="id" value={item.id} />
-                      <input type="hidden" name="delta" value={-1} />
-                      <button
-                        type="submit"
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-95"
-                      >
-                        −
-                      </button>
-                    </form>
-                    <span className="w-16 text-center text-sm tabular-nums text-foreground">
+                    <button
+                      type="button"
+                      onClick={() => adjust(item.id, -1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-90"
+                    >
+                      −
+                    </button>
+                    <span className="w-16 text-center text-sm tabular-nums text-foreground transition-all">
                       {item.quantity} {item.unit}
                     </span>
-                    <form action={adjustPantryQuantity}>
-                      <input type="hidden" name="id" value={item.id} />
-                      <input type="hidden" name="delta" value={1} />
-                      <button
-                        type="submit"
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-95"
-                      >
-                        +
-                      </button>
-                    </form>
-                    <form action={deletePantryItem}>
-                      <input type="hidden" name="id" value={item.id} />
-                      <button
-                        type="submit"
-                        aria-label="Supprimer"
-                        className="ml-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-danger-soft hover:text-danger"
-                      >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                        </svg>
-                      </button>
-                    </form>
+                    <button
+                      type="button"
+                      onClick={() => adjust(item.id, 1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-accent hover:text-accent active:scale-90"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => remove(item.id)}
+                      aria-label="Supprimer"
+                      className="ml-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-danger-soft hover:text-danger active:scale-90"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
                 {expandedId === item.id && item.nutrients && (
-                  <div className="mt-3">
+                  <div className="mt-3 animate-fade-in">
                     <NutrientGrid nutrients={item.nutrients} estimated={item.nutrients_estimated} />
                   </div>
                 )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </section>
       ))}

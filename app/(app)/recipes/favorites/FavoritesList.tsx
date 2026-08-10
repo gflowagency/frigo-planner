@@ -3,6 +3,7 @@
 import { useState } from "react";
 import RecipeCard from "../RecipeCard";
 import { deleteFavoriteRecipe } from "../favorites-actions";
+import SubmitButton from "@/app/components/SubmitButton";
 
 type Favorite = {
   id: string;
@@ -50,8 +51,8 @@ export default function FavoritesList({ favorites }: { favorites: Favorite[] }) 
   return (
     <div className="flex flex-col gap-4">
       {error && <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>}
-      {favorites.map((fav) => (
-        <RecipeCard key={fav.id} recipe={fav}>
+      {favorites.map((fav, i) => (
+        <RecipeCard key={fav.id} recipe={fav} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}>
           {consumedSummary[fav.id] ? (
             <p className="rounded-xl bg-success-soft px-3 py-2.5 text-xs text-success">
               ✓ Préparée. {consumedSummary[fav.id]}
@@ -67,12 +68,9 @@ export default function FavoritesList({ favorites }: { favorites: Favorite[] }) 
           )}
           <form action={deleteFavoriteRecipe}>
             <input type="hidden" name="id" value={fav.id} />
-            <button
-              type="submit"
-              className="rounded-xl border border-border px-3.5 py-2 text-xs font-medium text-muted-2 transition-colors hover:border-danger hover:text-danger"
-            >
+            <SubmitButton variant="danger" size="sm" pendingText="Suppression…">
               Supprimer
-            </button>
+            </SubmitButton>
           </form>
         </RecipeCard>
       ))}

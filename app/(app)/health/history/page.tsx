@@ -51,14 +51,19 @@ export default async function HealthHistoryPage() {
             const pct = Math.max(total > 0 ? 4 : 0, Math.round((total / maxTotal) * 100));
             const over = targetTotal > 0 && total > targetTotal;
             return (
-              <div key={date} className="flex flex-1 flex-col items-center gap-1">
-                <div className="flex h-20 w-full items-end overflow-hidden rounded-sm bg-background">
+              <div key={date} className="group flex flex-1 flex-col items-center gap-1">
+                <div
+                  title={`${Math.round(total)} kcal`}
+                  className="flex h-20 w-full items-end overflow-hidden rounded-sm bg-background"
+                >
                   <div
-                    className={`w-full rounded-sm transition-all ${over ? "bg-danger" : "bg-accent"}`}
+                    className={`w-full rounded-sm transition-all duration-300 group-hover:opacity-80 ${over ? "bg-danger" : "bg-accent"}`}
                     style={{ height: `${pct}%` }}
                   />
                 </div>
-                <span className="text-[9px] text-muted-2">{new Date(date + "T12:00:00").getDate()}</span>
+                <span className="text-[9px] text-muted-2 transition-colors group-hover:text-foreground">
+                  {new Date(date + "T12:00:00").getDate()}
+                </span>
               </div>
             );
           })}
@@ -68,10 +73,14 @@ export default async function HealthHistoryPage() {
       {days
         .filter((d) => byDate.has(d))
         .reverse()
-        .map((date) => {
+        .map((date, i) => {
           const bucket = byDate.get(date)!;
           return (
-            <div key={date} className="rounded-2xl border border-border bg-surface p-4">
+            <div
+              key={date}
+              className="animate-fade-in-up rounded-2xl border border-border bg-surface p-4"
+              style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+            >
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-semibold text-foreground">
                   {capitalize(DAY_FMT.format(new Date(date + "T12:00:00")))}

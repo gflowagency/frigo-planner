@@ -53,8 +53,12 @@ export default async function HealthTodayPage() {
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {MEAL_ORDER.filter((slot) => grouped.has(slot)).map((slot) => (
-            <div key={slot} className="rounded-2xl border border-border bg-surface p-4">
+          {MEAL_ORDER.filter((slot) => grouped.has(slot)).map((slot, i) => (
+            <div
+              key={slot}
+              className="animate-fade-in-up rounded-2xl border border-border bg-surface p-4"
+              style={{ animationDelay: `${i * 50}ms` }}
+            >
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-2">{MEAL_LABELS[slot]}</p>
               <ul className="flex flex-col gap-2">
                 {grouped.get(slot)!.map((e) => (
@@ -72,7 +76,7 @@ export default async function HealthTodayPage() {
                         <button
                           type="submit"
                           aria-label="Supprimer"
-                          className="flex h-6 w-6 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-danger-soft hover:text-danger"
+                          className="flex h-6 w-6 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-danger-soft hover:text-danger active:scale-90"
                         >
                           ✕
                         </button>
