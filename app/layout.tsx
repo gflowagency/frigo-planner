@@ -1,9 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Figtree, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Fraunces (warm editorial serif, for headings) + Figtree (humanist
+// grotesk, for body/UI) replace the default Geist pairing on purpose —
+// Geist reads instantly as "generic Vercel/AI-tool app" at this point.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT", "WONK"],
+});
+
+const figtree = Figtree({
+  variable: "--font-figtree",
   subsets: ["latin"],
 });
 
@@ -34,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="fr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${figtree.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         {/* Next's appleWebApp metadata only emits the unified "mobile-web-app-capable"

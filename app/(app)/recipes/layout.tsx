@@ -15,7 +15,7 @@ export default function RecipesLayout({ children }: { children: React.ReactNode 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Recettes</h1>
+        <h1 className="font-display text-[22px] font-semibold tracking-tight text-foreground">Recettes</h1>
         <p className="mt-0.5 text-sm text-muted">Suggestions IA, favoris et planning de la semaine.</p>
       </div>
 

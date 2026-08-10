@@ -40,7 +40,7 @@ export default async function OnboardingPage({
     <main className="min-h-dvh bg-background px-6 py-10 sm:flex sm:flex-col sm:justify-center">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-7 text-center sm:text-left">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Ton profil</h1>
+          <h1 className="font-display text-[28px] font-semibold tracking-tight text-foreground">Ton profil</h1>
           <p className="mt-1.5 text-[15px] text-muted">
             Ça nous sert à équilibrer les recettes entre vous deux, sans rien calculer à la main.
           </p>

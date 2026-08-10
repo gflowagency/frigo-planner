@@ -13,10 +13,10 @@ export default async function SignupPage({
     <main className="flex min-h-dvh flex-col justify-center bg-background px-6 py-12">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-lg font-semibold text-accent-foreground shadow-[0_8px_20px_-8px_rgba(193,96,46,0.55)]">
+          <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent font-display text-lg font-semibold text-accent-foreground shadow-[0_8px_20px_-8px_rgba(193,96,46,0.55)]">
             F
           </span>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Créer un compte</h1>
+          <h1 className="font-display text-[28px] font-semibold tracking-tight text-foreground">Créer un compte</h1>
           <p className="mt-1.5 text-[15px] text-muted">
             Ensuite tu pourras créer ton foyer ou rejoindre celui de ton/ta partenaire.
           </p>

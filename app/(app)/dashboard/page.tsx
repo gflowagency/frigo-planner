@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-7">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">Stock du foyer</h1>
+          <h1 className="font-display text-[22px] font-semibold tracking-tight text-foreground">Stock du foyer</h1>
           <p className="mt-0.5 text-sm text-muted">
             {count} article{count > 1 ? "s" : ""} dans le frigo et les placards.
           </p>
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/scan"
-          className="hidden shrink-0 items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] sm:flex"
+          className="hidden shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] transition-all hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] active:scale-[0.98] sm:flex"
         >
           Scanner un produit
         </Link>
@@ -69,14 +69,14 @@ export default async function DashboardPage() {
 
       {count === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center">
-          <span className="text-3xl">🧊</span>
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-3xl">🧊</span>
           <p className="text-[15px] font-medium text-foreground">Stock vide pour l&apos;instant</p>
           <p className="max-w-xs text-sm text-muted">
             Scanne ton premier produit pour commencer à suivre le frigo et les placards.
           </p>
           <Link
             href="/scan"
-            className="mt-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98]"
+            className="mt-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] transition-all hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] active:scale-[0.98]"
           >
             Scanner un produit
           </Link>

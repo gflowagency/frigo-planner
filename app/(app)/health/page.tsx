@@ -29,14 +29,14 @@ export default async function HealthTodayPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-2xl border border-border bg-surface p-4">
-        <p className="text-sm text-muted">Total du jour</p>
-        <p className="mt-0.5 text-2xl font-semibold tabular-nums text-foreground">
-          {Math.round(totalKcal)} kcal
-          {targetTotal > 0 && <span className="text-base font-normal text-muted-2"> / ~{Math.round(targetTotal)}</span>}
+      <div className="rounded-3xl bg-accent-soft p-5">
+        <p className="text-sm font-medium text-accent-hover">Total du jour</p>
+        <p className="mt-0.5 font-display text-3xl font-medium tabular-nums text-foreground">
+          {Math.round(totalKcal)} <span className="text-xl">kcal</span>
+          {targetTotal > 0 && <span className="text-lg font-normal text-muted"> / ~{Math.round(targetTotal)}</span>}
         </p>
         {targetTotal > 0 && (
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface/70">
             <div
               className={`h-full rounded-full transition-all ${pct > 100 ? "bg-danger" : "bg-accent"}`}
               style={{ width: `${Math.min(100, pct)}%` }}

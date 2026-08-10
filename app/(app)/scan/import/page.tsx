@@ -15,7 +15,7 @@ export default async function ImportPage() {
           <span className="text-muted-2">/</span>
           <span className="text-sm text-foreground">Import photos</span>
         </div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Importer des photos</h1>
+        <h1 className="font-display text-[22px] font-semibold tracking-tight text-foreground">Importer des photos</h1>
         <p className="mt-0.5 text-sm text-muted">
           Prends en photo tes codes-barres pendant tes courses, même sans réseau — importe-les ici
           d&apos;un coup une fois connecté.

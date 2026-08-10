@@ -9,7 +9,7 @@ export default async function ScanPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">Scanner un produit</h1>
+          <h1 className="font-display text-[22px] font-semibold tracking-tight text-foreground">Scanner un produit</h1>
           <p className="mt-0.5 text-sm text-muted">
             Autorise la caméra, vise le code-barres, on récupère le produit automatiquement.
           </p>

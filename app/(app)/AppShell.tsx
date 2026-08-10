@@ -88,10 +88,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       >
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/dashboard" className="group flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-sm font-semibold text-accent-foreground transition-transform duration-200 group-hover:scale-110 group-active:scale-95">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent font-display text-sm font-semibold text-accent-foreground shadow-[0_4px_10px_-3px_rgba(193,96,46,0.6)] transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-3 group-active:scale-95">
               F
             </span>
-            <span className="text-[15px] font-semibold tracking-tight text-foreground">Frigo Planner</span>
+            <span className="font-display text-base font-medium tracking-tight text-foreground">Frigo Planner</span>
           </Link>
 
           <nav className="hidden items-center gap-1 sm:flex">

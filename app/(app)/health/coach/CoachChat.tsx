@@ -42,7 +42,7 @@ export default function CoachChat() {
     <div className="flex flex-col gap-3">
       {messages.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center">
-          <span className="text-3xl">🏋️</span>
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-3xl">🏋️</span>
           <p className="text-[15px] font-medium text-foreground">Ton coach nutrition &amp; sport</p>
           <p className="max-w-xs text-sm text-muted">
             Pose une question sur votre alimentation, vos objectifs, ou comment progresser. Il connaît vos profils et
@@ -95,7 +95,7 @@ export default function CoachChat() {
         <button
           onClick={send}
           disabled={loading || !input.trim()}
-          className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
+          className="rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] transition-all hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] active:scale-[0.98] disabled:opacity-50"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="22" y1="2" x2="11" y2="13" />

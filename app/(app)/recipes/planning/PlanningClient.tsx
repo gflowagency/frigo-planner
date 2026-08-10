@@ -82,7 +82,7 @@ export default function PlanningClient({ days, favorites }: { days: DayCol[]; fa
           <button
             onClick={generateWeek}
             disabled={generating}
-            className="flex-1 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
+            className="flex-1 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] transition-all hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] active:scale-[0.98] disabled:opacity-50"
           >
             {generating ? "Génération des 7 dîners…" : "🪄 Générer mes dîners de la semaine"}
           </button>
@@ -113,7 +113,7 @@ export default function PlanningClient({ days, favorites }: { days: DayCol[]; fa
               <button
                 onClick={confirmWeek}
                 disabled={saving}
-                className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
+                className="rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] transition-all hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] active:scale-[0.98] disabled:opacity-50"
               >
                 {saving ? "Enregistrement…" : "Enregistrer le planning"}
               </button>
@@ -139,7 +139,7 @@ export default function PlanningClient({ days, favorites }: { days: DayCol[]; fa
 
       {!weekPlan && favorites.length === 0 && !days.some((d) => d.dejeuner || d.diner) && (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center">
-          <span className="text-3xl">🗓️</span>
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-3xl">🗓️</span>
           <p className="text-[15px] font-medium text-foreground">Pas encore de planning</p>
           <p className="max-w-xs text-sm text-muted">
             Génère tes dîners de la semaine ci-dessus, ou sauvegarde des recettes en favoris pour les planifier à la

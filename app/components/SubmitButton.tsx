@@ -4,7 +4,7 @@ import { useFormStatus } from "react-dom";
 
 const VARIANTS = {
   primary:
-    "bg-accent text-accent-foreground hover:bg-accent-hover disabled:opacity-60 disabled:hover:bg-accent",
+    "bg-accent text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] disabled:opacity-60 disabled:shadow-none disabled:hover:bg-accent",
   danger: "border border-border text-danger hover:bg-danger-soft disabled:opacity-60",
 };
 
@@ -39,7 +39,7 @@ export default function SubmitButton({
     <button
       type="submit"
       disabled={pending}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all active:scale-[0.98] disabled:active:scale-100 ${SIZES[size]} ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all active:scale-[0.98] disabled:active:scale-100 ${SIZES[size]} ${VARIANTS[variant]} ${className}`}
     >
       {pending && (
         <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent opacity-70" />

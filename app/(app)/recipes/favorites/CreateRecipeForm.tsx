@@ -166,7 +166,7 @@ export default function CreateRecipeForm() {
           type="button"
           onClick={save}
           disabled={saving}
-          className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
+          className="rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] transition-all hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] active:scale-[0.98] disabled:opacity-50"
         >
           {saving ? "Enregistrement…" : "Enregistrer la recette"}
         </button>

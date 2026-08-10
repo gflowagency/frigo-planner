@@ -51,7 +51,7 @@ export default async function SettingsPage({
         <Link href="/health" className="text-sm text-muted hover:text-foreground">
           ← Profil
         </Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Paramètres</h1>
+        <h1 className="mt-1 font-display text-[22px] font-semibold tracking-tight text-foreground">Paramètres</h1>
         <p className="mt-0.5 text-sm text-muted">
           Modifie tes informations, tes préférences et retrouve le code de ton foyer.
         </p>

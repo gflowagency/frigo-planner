@@ -19,9 +19,9 @@ export default function RecipeCard({
   style?: React.CSSProperties;
 }) {
   return (
-    <article className={`rounded-2xl border border-border bg-surface p-5 ${className}`} style={style}>
+    <article className={`rounded-3xl border border-border bg-surface p-5 ${className}`} style={style}>
       <div className="mb-2 flex items-start justify-between gap-3">
-        <h3 className="text-[17px] font-semibold tracking-tight text-foreground">{recipe.title}</h3>
+        <h3 className="font-display text-xl font-medium tracking-tight text-foreground">{recipe.title}</h3>
         {recipe.estimated_calories_per_serving != null && (
           <span className="whitespace-nowrap rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium tabular-nums text-accent-hover">
             ~{recipe.estimated_calories_per_serving} kcal / part

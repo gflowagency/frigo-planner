@@ -174,13 +174,13 @@ export default function PhotoImport({ dietaryPreferences }: { dietaryPreferences
   if (phase === "done") {
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center">
-        <span className="text-3xl">✅</span>
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft text-3xl">✅</span>
         <p className="text-[15px] font-medium text-foreground">
           {selectedCount} article{selectedCount > 1 ? "s" : ""} ajouté{selectedCount > 1 ? "s" : ""} au stock
         </p>
         <button
           onClick={() => router.push("/dashboard")}
-          className="mt-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98]"
+          className="mt-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] transition-all hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] active:scale-[0.98]"
         >
           Voir le stock
         </button>
@@ -282,7 +282,7 @@ export default function PhotoImport({ dietaryPreferences }: { dietaryPreferences
           <button
             onClick={confirmImport}
             disabled={selectedCount === 0 || phase === "saving"}
-            className="rounded-xl bg-accent px-4 py-3 text-[15px] font-semibold text-accent-foreground transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
+            className="rounded-full bg-accent px-4 py-3 text-[15px] font-semibold text-accent-foreground shadow-[0_10px_20px_-8px_rgba(193,96,46,0.45)] transition-all hover:bg-accent-hover hover:shadow-[0_12px_22px_-6px_rgba(193,96,46,0.55)] active:scale-[0.98] disabled:opacity-50"
           >
             {phase === "saving"
               ? "Ajout en cours…"
